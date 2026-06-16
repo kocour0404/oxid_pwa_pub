@@ -188,6 +188,41 @@ switch ($op) {
         }
         json_response(['ok' => true]);
 
+    case 'stats.get':
+        require_method('GET');
+        require_auth();
+        $oxid = get_oxid_pdo();
+
+        $stmtMonth = $oxid->query("
+            SELECT COALESCE(SUM(OXTOTALORDERSUM - OXDELCOST), 0) as total_net 
+            FROM oxorder 
+            WHERE YEAR(OXORDERDATE) = YEAR(CURRENT_DATE()) 
+              AND MONTH(OXORDERDATE) = MONTH(CURRENT_DATE())
+              AND OXSTORNO = 0
+        ");
+        $currentMonthTotal = (float)$stmtMonth->fetchColumn();
+
+        $stmtYear = $oxid->query("
+            SELECT MONTH(OXORDERDATE) as month, SUM(OXTOTALORDERSUM - OXDELCOST) as total_net
+            FROM oxorder
+            WHERE YEAR(OXORDERDATE) = YEAR(CURRENT_DATE())
+              AND OXSTORNO = 0
+            GROUP BY MONTH(OXORDERDATE)
+            ORDER BY month ASC
+        ");
+        $yearDataRaw = $stmtYear->fetchAll(PDO::FETCH_ASSOC);
+        
+        $monthlyData = array_fill(1, 12, 0);
+        foreach ($yearDataRaw as $row) {
+            $monthlyData[(int)$row['month']] = (float)$row['total_net'];
+        }
+
+        json_response([
+            'ok' => true,
+            'current_month' => $currentMonthTotal,
+            'year_data' => array_values($monthlyData)
+        ]);
+
     case 'orders.new':
         require_method('GET');
         require_auth();

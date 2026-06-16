@@ -36,6 +36,77 @@ const logoutBtn = document.getElementById('logout-btn');
 const tileOrders = document.getElementById('tile-orders');
 const tileSearch = document.getElementById('tile-search');
 const tileSettings = document.getElementById('tile-settings');
+const tileStats = document.getElementById('tile-stats');
+
+// Init
+function init() {
+    state.authenticated = !!getCookie('pwa_sid');
+    
+    if (state.authenticated) {
+        switchView('dashboard-view');
+        loadDashboardStats();
+    } else {
+        switchView('login-view');
+    }
+}
+
+// Stats Logic
+async function loadStats() {
+    const statsError = document.getElementById('stats-error');
+    const statsLoading = document.getElementById('stats-loading');
+    const statsContent = document.getElementById('stats-content');
+    const statMonthTotal = document.getElementById('stat-month-total');
+    const statYearChart = document.getElementById('stat-year-chart');
+
+    statsError.textContent = '';
+    statsLoading.style.display = 'block';
+    statsContent.style.display = 'none';
+
+    try {
+        const data = await apiGet('stats.get');
+        if (data.ok) {
+            // Render month total
+            const total = Number(data.current_month).toFixed(2).replace('.', ',');
+            statMonthTotal.innerHTML = `${total} &euro;`;
+
+            // Render chart
+            statYearChart.innerHTML = '';
+            const months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+            const yearData = data.year_data; // Array of 12 values
+            const maxVal = Math.max(...yearData, 1);
+
+            yearData.forEach((val, index) => {
+                const percentage = Math.max((val / maxVal) * 100, 1);
+                const formattedVal = Number(val).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+                
+                const col = document.createElement('div');
+                col.className = 'chart-col';
+                col.title = `${months[index]}: ${formattedVal}`;
+                
+                const bar = document.createElement('div');
+                bar.className = 'chart-bar';
+                bar.style.height = `${percentage}%`;
+                
+                const label = document.createElement('div');
+                label.className = 'chart-label';
+                label.textContent = months[index];
+                
+                col.appendChild(bar);
+                col.appendChild(label);
+                statYearChart.appendChild(col);
+            });
+
+            statsLoading.style.display = 'none';
+            statsContent.style.display = 'block';
+        } else {
+            statsError.textContent = 'Fehler: ' + data.error;
+            statsLoading.style.display = 'none';
+        }
+    } catch(e) {
+        statsError.textContent = 'Netzwerkfehler beim Laden der Statistiken.';
+        statsLoading.style.display = 'none';
+    }
+}
 
 // Orders
 const refreshOrdersBtn = document.getElementById('refresh-orders-btn');
@@ -294,6 +365,9 @@ function switchView(viewId) {
     if (viewId === 'settings-view') {
         loadConfig();
     }
+    if (viewId === 'stats-view') {
+        loadStats();
+    }
 }
 
 function renderOrders() {
@@ -428,6 +502,7 @@ navLinks.forEach(link => {
 tileOrders.addEventListener('click', () => switchView('orders-view'));
 tileSearch.addEventListener('click', () => switchView('order-search-view'));
 tileSettings.addEventListener('click', () => switchView('settings-view'));
+tileStats.addEventListener('click', () => switchView('stats-view'));
 
 // Event Listeners
 loginForm.addEventListener('submit', (e) => {

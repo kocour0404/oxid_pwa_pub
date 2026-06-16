@@ -37,12 +37,13 @@
                     <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
-            <ul class="sidebar-links">
-                <li><a href="#" data-target="dashboard-view" class="nav-link">Dashboard</a></li>
-                <li><a href="#" data-target="orders-view" class="nav-link">Bestellungen</a></li>
-                <li><a href="#" data-target="order-search-view" class="nav-link">Bestellung suchen</a></li>
-                <li><a href="#" data-target="settings-view" class="nav-link">Einstellungen</a></li>
-            </ul>
+                <ul class="sidebar-links">
+                    <li><a href="#" data-target="dashboard-view" class="active">Dashboard</a></li>
+                    <li><a href="#" data-target="orders-view">Neue Bestellungen</a></li>
+                    <li><a href="#" data-target="order-search-view">Bestellung suchen</a></li>
+                    <li><a href="#" data-target="stats-view">Statistiken</a></li>
+                    <li><a href="#" data-target="settings-view">Einstellungen</a></li>
+                </ul>
             <div class="sidebar-footer">
                 <button id="logout-btn" class="danger-btn">Logout</button>
             </div>
@@ -87,14 +88,21 @@
                         <h3>Neue Bestellungen</h3>
                         <p>Lade die letzten 10 Bestellungen.</p>
                     </div>
-                    <div class="tile" id="tile-search">
-                        <div class="tile-icon">
-                            <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <div class="tile" id="tile-search">
+                            <div class="tile-icon">
+                                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                            </div>
+                            <h3>Bestellung suchen</h3>
+                            <p>Nach OXORDERNR filtern</p>
                         </div>
-                        <h3>Bestellung suchen</h3>
-                        <p>Suche nach OXORDERNR.</p>
-                    </div>
-                    <div class="tile" id="tile-settings">
+                        <div class="tile" id="tile-stats">
+                            <div class="tile-icon">
+                                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+                            </div>
+                            <h3>Statistiken</h3>
+                            <p>Umsätze und Auswertungen</p>
+                        </div>
+                        <div class="tile" id="tile-settings">
                         <div class="tile-icon">
                             <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
                         </div>
@@ -128,28 +136,53 @@
                 </div>
             </div>
 
-            <!-- Order Search View -->
-            <div id="order-search-view" class="view" style="display: none;">
-                <div class="view-header">
-                    <h2>Bestellung suchen</h2>
+                <!-- Search View -->
+                <div id="order-search-view" class="view" style="display: none;">
+                    <div class="view-header">
+                        <h2>Bestellung suchen</h2>
+                    </div>
+                    <div class="login-card" style="margin: 0 0 24px 0; max-width: 100%;">
+                        <form id="order-search-form" style="display: flex; gap: 12px; align-items: flex-end;">
+                            <div class="form-group" style="margin: 0; flex: 1;">
+                                <label for="search-order-nr">Bestellnummer (OXORDERNR)</label>
+                                <input type="text" id="search-order-nr" required placeholder="z.B. 1001">
+                            </div>
+                            <button type="submit" class="primary-btn">Suchen</button>
+                        </form>
+                        <div id="search-error" class="error-msg"></div>
+                    </div>
+                    <div id="search-result-container" class="order-detail-container" style="display: none;">
+                        <h3 id="search-detail-title"></h3>
+                        <div id="search-detail-content" class="detail-content"></div>
+                    </div>
                 </div>
-                <div class="login-card" style="margin: 0 0 24px 0; max-width: 100%;">
-                    <form id="order-search-form" style="display: flex; gap: 12px; align-items: flex-end;">
-                        <div class="form-group" style="margin: 0; flex: 1;">
-                            <label for="search-order-nr">Bestellnummer (OXORDERNR)</label>
-                            <input type="text" id="search-order-nr" required placeholder="z.B. 1001">
-                        </div>
-                        <button type="submit" class="primary-btn">Suchen</button>
-                    </form>
-                    <div id="search-error" class="error-msg"></div>
-                </div>
-                <div id="search-result-container" class="order-detail-container" style="display: none;">
-                    <h3 id="search-detail-title"></h3>
-                    <div id="search-detail-content" class="detail-content"></div>
-                </div>
-            </div>
 
-            <!-- Settings View -->
+                <!-- Stats View -->
+                <div id="stats-view" class="view-section" style="display: none;">
+                    <div class="view-header">
+                        <h2>Statistiken</h2>
+                    </div>
+                    <div id="stats-error" class="error-msg"></div>
+                    
+                    <div id="stats-loading" class="spinner" style="margin-top: 40px; display: none;"></div>
+
+                    <div class="stats-layout" id="stats-content" style="display: none;">
+                        <div class="stat-card" style="margin-bottom: 24px;">
+                            <h3>Laufender Monat</h3>
+                            <div class="stat-big-number" id="stat-month-total">0,00 &euro;</div>
+                            <p class="text-muted" style="font-size: 0.875rem;">Bestellwert ohne Versandkosten</p>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <h3 style="margin-bottom: 16px;">Jahresverlauf</h3>
+                            <div class="chart-container" id="stat-year-chart">
+                                <!-- Bars injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings View -->
             <div id="settings-view" class="view" style="display: none;">
                 <h2>Einstellungen</h2>
                 <p class="subtitle">Verbindung zur OXID eShop Datenbank konfigurieren</p>
