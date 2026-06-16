@@ -255,7 +255,8 @@ async function searchOrder(orderNr) {
                 html += `<p><strong>Artikel:</strong></p><ul>`;
                 order.items.forEach(item => {
                     const p = Number(item.price).toFixed(2).replace('.', ',');
-                    html += `<li>${item.qty}x ${item.name} (${p} &euro;)</li>`;
+                    const skuText = item.sku ? `[${item.sku}] ` : '';
+                    html += `<li>${item.qty}x ${skuText}${item.name} (${p} &euro;)</li>`;
                 });
                 html += `</ul>`;
             }
@@ -392,7 +393,8 @@ function renderOrderDetail() {
         html += `<p><strong>Artikel:</strong></p><ul>`;
         order.items.forEach(item => {
             const p = Number(item.price).toFixed(2).replace('.', ',');
-            html += `<li>${item.qty}x ${item.name} (${p} &euro;)</li>`;
+            const skuText = item.sku ? `[${item.sku}] ` : '';
+            html += `<li>${item.qty}x ${skuText}${item.name} (${p} &euro;)</li>`;
         });
         html += `</ul>`;
     }
