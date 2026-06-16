@@ -15,7 +15,8 @@ const views = {
     dashboard: document.getElementById('dashboard-view'),
     orders: document.getElementById('orders-view'),
     settings: document.getElementById('settings-view'),
-    orderSearch: document.getElementById('order-search-view')
+    orderSearch: document.getElementById('order-search-view'),
+    stats: document.getElementById('stats-view')
 };
 
 // Nav & Sidebar
@@ -74,7 +75,7 @@ async function loadStats() {
             const months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
             const yearData = data.year_data || [];
             const historyData = data.history_data || [];
-
+            
             const maxVal = Math.max(...yearData, ...historyData, 1);
 
             months.forEach((monthName, index) => {
