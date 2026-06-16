@@ -72,44 +72,26 @@ async function loadStats() {
             // Render chart
             statYearChart.innerHTML = '';
             const months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-            const yearData = data.year_data || [];
-            const historyData = data.history_data || [];
+            const yearData = data.year_data; // Array of 12 values
+            const maxVal = Math.max(...yearData, 1);
 
-            const maxVal = Math.max(...yearData, ...historyData, 1);
-
-            months.forEach((monthName, index) => {
-                const valYear = yearData[index] || 0;
-                const valHist = historyData[index] || 0;
-                
-                const pctYear = Math.max((valYear / maxVal) * 100, 1);
-                const pctHist = Math.max((valHist / maxVal) * 100, 1);
-                
-                const fmtYear = Number(valYear).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
-                const fmtHist = Number(valHist).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+            yearData.forEach((val, index) => {
+                const percentage = Math.max((val / maxVal) * 100, 1);
+                const formattedVal = Number(val).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
                 
                 const col = document.createElement('div');
                 col.className = 'chart-col';
-                col.title = `${monthName}\nAktuell: ${fmtYear}\nSchnitt Vorjahre: ${fmtHist}`;
+                col.title = `${months[index]}: ${formattedVal}`;
                 
-                const barsContainer = document.createElement('div');
-                barsContainer.className = 'chart-bars-container';
-                
-                const barHist = document.createElement('div');
-                barHist.className = 'chart-bar chart-bar-history';
-                barHist.style.height = `${pctHist}%`;
-
-                const barYear = document.createElement('div');
-                barYear.className = 'chart-bar';
-                barYear.style.height = `${pctYear}%`;
-                
-                barsContainer.appendChild(barHist);
-                barsContainer.appendChild(barYear);
+                const bar = document.createElement('div');
+                bar.className = 'chart-bar';
+                bar.style.height = `${percentage}%`;
                 
                 const label = document.createElement('div');
                 label.className = 'chart-label';
-                label.textContent = monthName;
+                label.textContent = months[index];
                 
-                col.appendChild(barsContainer);
+                col.appendChild(bar);
                 col.appendChild(label);
                 statYearChart.appendChild(col);
             });
