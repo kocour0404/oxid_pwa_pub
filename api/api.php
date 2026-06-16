@@ -193,23 +193,34 @@ switch ($op) {
         require_auth();
         $oxid = get_oxid_pdo();
 
-        $stmtMonth = $oxid->query("
+        $latestDate = $oxid->query("SELECT MAX(OXORDERDATE) FROM oxorder")->fetchColumn();
+        if ($latestDate) {
+            $year = (int)date('Y', strtotime($latestDate));
+            $month = (int)date('m', strtotime($latestDate));
+        } else {
+            $year = (int)date('Y');
+            $month = (int)date('m');
+        }
+
+        $stmtMonth = $oxid->prepare("
             SELECT COALESCE(SUM(OXTOTALORDERSUM - OXDELCOST), 0) as total_net 
             FROM oxorder 
-            WHERE YEAR(OXORDERDATE) = YEAR(CURRENT_DATE()) 
-              AND MONTH(OXORDERDATE) = MONTH(CURRENT_DATE())
+            WHERE YEAR(OXORDERDATE) = ? 
+              AND MONTH(OXORDERDATE) = ?
               AND OXSTORNO = 0
         ");
+        $stmtMonth->execute([$year, $month]);
         $currentMonthTotal = (float)$stmtMonth->fetchColumn();
 
-        $stmtYear = $oxid->query("
+        $stmtYear = $oxid->prepare("
             SELECT MONTH(OXORDERDATE) as month, SUM(OXTOTALORDERSUM - OXDELCOST) as total_net
             FROM oxorder
-            WHERE YEAR(OXORDERDATE) = YEAR(CURRENT_DATE())
+            WHERE YEAR(OXORDERDATE) = ?
               AND OXSTORNO = 0
             GROUP BY MONTH(OXORDERDATE)
             ORDER BY month ASC
         ");
+        $stmtYear->execute([$year]);
         $yearDataRaw = $stmtYear->fetchAll(PDO::FETCH_ASSOC);
         
         $monthlyData = array_fill(1, 12, 0);
