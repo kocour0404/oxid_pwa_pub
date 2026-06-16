@@ -1,0 +1,5 @@
+<IfModule mod_rewrite.c>
+    # Deaktiviert die Rewrite-Regeln, die aus dem Hauptverzeichnis (z.B. vom OXID eShop) vererbt werden.
+    # Dadurch bleiben die direkten API- und App-Pfade der PWA unangetastet und laufen nicht in den Shop-Router.
+    RewriteEngine Off
+</IfModule>

@@ -1,0 +1,15 @@
+{
+  "name": "Order PWA",
+  "short_name": "Order PWA",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F9FAFB",
+  "theme_color": "#4F46E5",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
