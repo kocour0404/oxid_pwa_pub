@@ -341,6 +341,7 @@ async function searchOrder(orderNr) {
             if (isPaid) badgesHtml += '<span class="badge badge-paid">Bezahlt</span>';
             if (isShipped) badgesHtml += '<span class="badge badge-shipped">Versendet</span>';
             
+            let html = badgesHtml ? `<p>${badgesHtml}</p>` : '';
             const customerLink = order.user_id ? `<a href="#" onclick="loadCustomerHistory('${order.user_id}', '${order.customer}'); return false;">${order.customer}</a>` : order.customer;
             html += `<p><strong>Kunde:</strong> ${customerLink} (Nr. ${order.customer_nr || '-'})</p>`;
             html += `<p><strong>Datum:</strong> ${order.created_at}</p>`;
@@ -412,7 +413,7 @@ function resetSearchView() {
 }
 
 function renderOrders() {
-    renderOrdersList(state.orders, document.getElementById('orders-list'), loadOrderDetail, state.selectedOrder ? state.selectedOrder.id : null);
+    renderOrdersList(state.orders, document.getElementById('orders-list'), (order) => loadOrderDetail(order.id), state.selectedOrder ? state.selectedOrder.id : null);
 }
 
 function renderOrdersList(ordersArray, container, clickCallback, activeId = null) {
@@ -503,6 +504,7 @@ function renderOrderDetail() {
     if (isPaid) badgesHtml += '<span class="badge badge-paid">Bezahlt</span>';
     if (isShipped) badgesHtml += '<span class="badge badge-shipped">Versendet</span>';
     
+    let html = badgesHtml ? `<p>${badgesHtml}</p>` : '';
     const customerLink = order.user_id ? `<a href="#" onclick="loadCustomerHistory('${order.user_id}', '${order.customer}'); return false;">${order.customer}</a>` : order.customer;
     html += `<p><strong>Kunde:</strong> ${customerLink} (Kdnr: ${order.customer_nr || '-'})</p>`;
     html += `<p><strong>Datum:</strong> ${order.created_at}</p>`;
