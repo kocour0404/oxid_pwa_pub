@@ -229,7 +229,7 @@ switch ($op) {
             $monthlyData[(int)$row['month']] = (float)$row['total_net'];
         }
 
-        // Cache-Check für Historie
+        // Cache-Check fÃ¼r Historie
         $cacheKey = 'history_avg_' . $year;
         $stmtCache = $pwa->prepare("SELECT config_value FROM oxidpwaconfig WHERE config_key = ?");
         $stmtCache->execute([$cacheKey]);
@@ -293,6 +293,7 @@ switch ($op) {
                 o.OXPAID as paid,
                 o.OXSTORNO as storno,
                 o.OXSENDDATE as senddate,
+                o.OXUSERID as user_id,
                 u.OXCUSTNR as customer_nr
             FROM oxorder o 
             LEFT JOIN oxuser u ON o.OXUSERID = u.OXID
@@ -340,6 +341,7 @@ switch ($op) {
                 o.OXPAID as paid,
                 o.OXSTORNO as storno,
                 o.OXSENDDATE as senddate,
+                o.OXUSERID as user_id,
                 u.OXCUSTNR as customer_nr
             FROM oxorder o 
             LEFT JOIN oxuser u ON o.OXUSERID = u.OXID
@@ -356,6 +358,97 @@ switch ($op) {
             json_response(['ok' => true, 'order' => $order]);
         }
         json_response(['ok' => false, 'error' => 'not_found'], 404);
+
+    case 'orders.search_date':
+        require_method('GET');
+        require_auth();
+        $from = $_GET['from'] ?? '';
+        $to = $_GET['to'] ?? '';
+        $limit = max(1, min(100, (int)($_GET['limit'] ?? 50)));
+
+        if (empty($from) || empty($to)) {
+            json_response(['ok' => false, 'error' => 'missing_dates'], 400);
+        }
+
+        $oxid = get_oxid_pdo();
+        $stmt = $oxid->prepare("
+            SELECT 
+                o.OXID as id, 
+                o.OXORDERNR as order_nr, 
+                o.OXORDERDATE as created_at, 
+                TRIM(CONCAT(o.OXBILLFNAME, ' ', o.OXBILLLNAME)) as customer, 
+                o.OXTOTALORDERSUM as total, 
+                o.OXDELCOST as shipping, 
+                o.OXTRANSSTATUS as status,
+                o.OXPAID as paid,
+                o.OXSTORNO as storno,
+                o.OXSENDDATE as senddate,
+                o.OXUSERID as user_id,
+                u.OXCUSTNR as customer_nr
+            FROM oxorder o 
+            LEFT JOIN oxuser u ON o.OXUSERID = u.OXID
+            WHERE o.OXORDERDATE >= ? AND o.OXORDERDATE <= ?
+            ORDER BY o.OXORDERDATE DESC 
+            LIMIT ?
+        ");
+        
+        $to_end_of_day = $to . ' 23:59:59';
+        $stmt->bindValue(1, $from);
+        $stmt->bindValue(2, $to_end_of_day);
+        $stmt->bindValue(3, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $artStmt = $oxid->prepare("SELECT OXARTNUM as sku, OXTITLE as name, OXAMOUNT as qty, OXPRICE as price FROM oxorderarticles WHERE OXORDERID = ?");
+        foreach ($orders as &$o) {
+            $artStmt->execute([$o['id']]);
+            $o['items'] = $artStmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+        json_response(['ok' => true, 'orders' => $orders]);
+
+    case 'orders.by_customer':
+        require_method('GET');
+        require_auth();
+        $user_id = $_GET['user_id'] ?? '';
+        $limit = 50;
+
+        if (empty($user_id)) {
+            json_response(['ok' => false, 'error' => 'missing_user_id'], 400);
+        }
+
+        $oxid = get_oxid_pdo();
+        $stmt = $oxid->prepare("
+            SELECT 
+                o.OXID as id, 
+                o.OXORDERNR as order_nr, 
+                o.OXORDERDATE as created_at, 
+                TRIM(CONCAT(o.OXBILLFNAME, ' ', o.OXBILLLNAME)) as customer, 
+                o.OXTOTALORDERSUM as total, 
+                o.OXDELCOST as shipping, 
+                o.OXTRANSSTATUS as status,
+                o.OXPAID as paid,
+                o.OXSTORNO as storno,
+                o.OXSENDDATE as senddate,
+                o.OXUSERID as user_id,
+                u.OXCUSTNR as customer_nr
+            FROM oxorder o 
+            LEFT JOIN oxuser u ON o.OXUSERID = u.OXID
+            WHERE o.OXUSERID = ?
+            ORDER BY o.OXORDERDATE DESC 
+            LIMIT ?
+        ");
+        
+        $stmt->bindValue(1, $user_id);
+        $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $artStmt = $oxid->prepare("SELECT OXARTNUM as sku, OXTITLE as name, OXAMOUNT as qty, OXPRICE as price FROM oxorderarticles WHERE OXORDERID = ?");
+        foreach ($orders as &$o) {
+            $artStmt->execute([$o['id']]);
+            $o['items'] = $artStmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+        json_response(['ok' => true, 'orders' => $orders]);
 
     case 'order.ship':
         require_method('POST');

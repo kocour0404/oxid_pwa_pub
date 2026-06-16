@@ -141,20 +141,60 @@
                     <div class="view-header">
                         <h2>Bestellung suchen</h2>
                     </div>
+                    
                     <div class="login-card" style="margin: 0 0 24px 0; max-width: 100%;">
-                        <form id="order-search-form" style="display: flex; gap: 12px; align-items: flex-end;">
+                        <h3>Nach Bestellnummer</h3>
+                        <form id="order-search-form" style="display: flex; gap: 12px; align-items: flex-end; margin-top: 16px;">
                             <div class="form-group" style="margin: 0; flex: 1;">
                                 <label for="search-order-nr">Bestellnummer (OXORDERNR)</label>
                                 <input type="text" id="search-order-nr" required placeholder="z.B. 1001">
                             </div>
                             <button type="submit" class="primary-btn">Suchen</button>
                         </form>
-                        <div id="search-error" class="error-msg"></div>
                     </div>
-                    <div id="search-result-container" class="order-detail-container" style="display: none;">
+
+                    <div class="login-card" style="margin: 0 0 24px 0; max-width: 100%;">
+                        <h3>Nach Zeitraum</h3>
+                        <form id="date-search-form" style="display: flex; gap: 12px; align-items: flex-end; margin-top: 16px; flex-wrap: wrap;">
+                            <div class="form-group" style="margin: 0; flex: 1; min-width: 120px;">
+                                <label for="search-date-from">Von</label>
+                                <input type="date" id="search-date-from" required>
+                            </div>
+                            <div class="form-group" style="margin: 0; flex: 1; min-width: 120px;">
+                                <label for="search-date-to">Bis</label>
+                                <input type="date" id="search-date-to" required>
+                            </div>
+                            <div class="form-group" style="margin: 0; width: 100px;">
+                                <label for="search-date-limit">Limit</label>
+                                <select id="search-date-limit" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem;">
+                                    <option value="20">20</option>
+                                    <option value="50" selected>50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="primary-btn">Suchen</button>
+                        </form>
+                    </div>
+
+                    <div id="search-error" class="error-msg"></div>
+
+                    <div id="search-result-container" class="order-detail-container" style="display: none; margin-bottom: 24px;">
                         <h3 id="search-detail-title"></h3>
                         <div id="search-detail-content" class="detail-content"></div>
                     </div>
+
+                    <div id="date-search-results" class="orders-list-container" style="display: none;"></div>
+                </div>
+
+                <!-- Customer History View -->
+                <div id="customer-history-view" class="view" style="display: none;">
+                    <div class="view-header">
+                        <h2>Kundenhistorie</h2>
+                        <button id="customer-history-back-btn" class="secondary-btn">Zurück</button>
+                    </div>
+                    <div id="customer-history-title" style="margin-bottom: 16px; font-weight: 500;"></div>
+                    <div id="customer-history-error" class="error-msg"></div>
+                    <div id="customer-history-results" class="orders-list-container"></div>
                 </div>
 
                 <!-- Stats View -->

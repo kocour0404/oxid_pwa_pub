@@ -142,6 +142,14 @@ const searchResultContainer = document.getElementById('search-result-container')
 const searchDetailTitle = document.getElementById('search-detail-title');
 const searchDetailContent = document.getElementById('search-detail-content');
 
+// Date Search & History DOM
+const dateSearchForm = document.getElementById('date-search-form');
+const dateSearchResults = document.getElementById('date-search-results');
+const customerHistoryView = document.getElementById('customer-history-view');
+const customerHistoryResults = document.getElementById('customer-history-results');
+const customerHistoryTitle = document.getElementById('customer-history-title');
+const customerHistoryError = document.getElementById('customer-history-error');
+
 // Settings
 const settingsForm = document.getElementById('settings-form');
 const settingsMsg = document.getElementById('settings-msg');
@@ -332,8 +340,8 @@ async function searchOrder(orderNr) {
             if (isPaid) badgesHtml += '<span class="badge badge-paid">Bezahlt</span>';
             if (isShipped) badgesHtml += '<span class="badge badge-shipped">Versendet</span>';
             
-            let html = badgesHtml ? `<p>${badgesHtml}</p>` : '';
-            html += `<p><strong>Kunde:</strong> ${order.customer} (Nr. ${order.customer_nr || '-'})</p>`;
+            const customerLink = order.user_id ? `<a href="#" onclick="loadCustomerHistory('${order.user_id}', '${order.customer}'); return false;">${order.customer}</a>` : order.customer;
+            html += `<p><strong>Kunde:</strong> ${customerLink} (Nr. ${order.customer_nr || '-'})</p>`;
             html += `<p><strong>Datum:</strong> ${order.created_at}</p>`;
             html += `<p><strong>Status:</strong> ${order.status}</p>`;
             
@@ -387,19 +395,36 @@ function switchView(viewId) {
     if (viewId === 'stats-view') {
         loadStats();
     }
+    if (viewId === 'order-search-view') {
+        resetSearchView();
+    }
+}
+
+function resetSearchView() {
+    const orderSearchForm = document.getElementById('order-search-form');
+    if (orderSearchForm) orderSearchForm.reset();
+    if (dateSearchForm) dateSearchForm.reset();
+    searchError.textContent = '';
+    searchResultContainer.style.display = 'none';
+    dateSearchResults.style.display = 'none';
+    dateSearchResults.innerHTML = '';
 }
 
 function renderOrders() {
-    ordersList.innerHTML = '';
-    if (state.orders.length === 0) {
-        ordersList.innerHTML = '<p class="text-muted" style="padding: 16px;">Keine neuen Bestellungen gefunden.</p>';
+    renderOrdersList(state.orders, document.getElementById('orders-list'), loadOrderDetail, state.selectedOrder ? state.selectedOrder.id : null);
+}
+
+function renderOrdersList(ordersArray, container, clickCallback, activeId = null) {
+    container.innerHTML = '';
+    if (!ordersArray || ordersArray.length === 0) {
+        container.innerHTML = '<p class="text-muted" style="padding: 16px;">Keine Bestellungen gefunden.</p>';
         return;
     }
-    state.orders.forEach(order => {
+    ordersArray.forEach(order => {
         const div = document.createElement('div');
         div.className = 'order-item';
         div.id = `order-item-${order.id}`;
-        if (state.selectedOrder && state.selectedOrder.id === order.id) {
+        if (activeId && activeId === order.id) {
             div.classList.add('active');
         }
         
@@ -424,8 +449,12 @@ function renderOrders() {
             <div class="order-item-meta">${order.customer} (Kdnr: ${order.customer_nr || '-'})</div>
             <div class="order-item-meta" style="font-size: 0.75rem; color: #999;">${order.created_at} &bull; Versand: ${shipping} &euro;</div>
         `;
-        div.onclick = () => loadOrderDetail(order.id);
-        ordersList.appendChild(div);
+        div.onclick = () => {
+            container.querySelectorAll('.order-item').forEach(el => el.classList.remove('active'));
+            div.classList.add('active');
+            clickCallback(order);
+        };
+        container.appendChild(div);
     });
 }
 
@@ -473,8 +502,8 @@ function renderOrderDetail() {
     if (isPaid) badgesHtml += '<span class="badge badge-paid">Bezahlt</span>';
     if (isShipped) badgesHtml += '<span class="badge badge-shipped">Versendet</span>';
     
-    let html = badgesHtml ? `<p>${badgesHtml}</p>` : '';
-    html += `<p><strong>Kunde:</strong> ${order.customer} (Kdnr: ${order.customer_nr || '-'})</p>`;
+    const customerLink = order.user_id ? `<a href="#" onclick="loadCustomerHistory('${order.user_id}', '${order.customer}'); return false;">${order.customer}</a>` : order.customer;
+    html += `<p><strong>Kunde:</strong> ${customerLink} (Kdnr: ${order.customer_nr || '-'})</p>`;
     html += `<p><strong>Datum:</strong> ${order.created_at}</p>`;
     html += `<p><strong>Status:</strong> ${order.status}</p>`;
     
@@ -545,6 +574,60 @@ orderSearchForm.addEventListener('submit', (e) => {
     const nr = document.getElementById('search-order-nr').value;
     searchOrder(nr);
 });
+
+dateSearchForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const from = document.getElementById('search-date-from').value;
+    const to = document.getElementById('search-date-to').value;
+    const limit = document.getElementById('search-date-limit').value;
+    
+    searchError.textContent = '';
+    searchResultContainer.style.display = 'none';
+    dateSearchResults.style.display = 'block';
+    dateSearchResults.innerHTML = '<div class="spinner" style="margin-top: 40px;"></div>';
+    
+    try {
+        const data = await apiGet('orders.search_date', { from, to, limit });
+        if (data.ok) {
+            renderOrdersList(data.orders, dateSearchResults, (order) => {
+                searchOrder(order.order_nr);
+            });
+        } else {
+            searchError.textContent = 'Fehler: ' + data.error;
+            dateSearchResults.innerHTML = '';
+        }
+    } catch (e) {
+        searchError.textContent = 'Netzwerkfehler.';
+        dateSearchResults.innerHTML = '';
+    }
+});
+
+customerHistoryBackBtn.addEventListener('click', () => {
+    switchView('order-search-view');
+});
+
+async function loadCustomerHistory(userId, customerName) {
+    switchView('customer-history-view');
+    customerHistoryTitle.textContent = `Historie für ${customerName}`;
+    customerHistoryError.textContent = '';
+    customerHistoryResults.innerHTML = '<div class="spinner" style="margin-top: 40px;"></div>';
+    
+    try {
+        const data = await apiGet('orders.by_customer', { user_id: userId });
+        if (data.ok) {
+            renderOrdersList(data.orders, customerHistoryResults, (order) => {
+                switchView('order-search-view');
+                searchOrder(order.order_nr);
+            });
+        } else {
+            customerHistoryError.textContent = 'Fehler: ' + data.error;
+            customerHistoryResults.innerHTML = '';
+        }
+    } catch (e) {
+        customerHistoryError.textContent = 'Netzwerkfehler.';
+        customerHistoryResults.innerHTML = '';
+    }
+}
 
 // Register Service Worker
 if ('serviceWorker' in navigator) {
