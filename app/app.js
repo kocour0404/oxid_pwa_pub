@@ -149,6 +149,7 @@ const customerHistoryView = document.getElementById('customer-history-view');
 const customerHistoryResults = document.getElementById('customer-history-results');
 const customerHistoryTitle = document.getElementById('customer-history-title');
 const customerHistoryError = document.getElementById('customer-history-error');
+const customerHistoryBackBtn = document.getElementById('customer-history-back-btn');
 
 // Settings
 const settingsForm = document.getElementById('settings-form');
