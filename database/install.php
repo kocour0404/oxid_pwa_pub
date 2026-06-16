@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 // =========================================================================
 // GENERIERT DURCH build.php
-// Diese Datei enthält den generierten Hash für den PWA-Nutzer 'stepan.kalina'.
+// Diese Datei enthält den generierten Hash für den PWA-Nutzer 'mustermann'.
 // Nach erfolgreicher Installation auf dem Webserver sollte diese Datei 
 // aus Sicherheitsgründen gelöscht werden!
 // =========================================================================
@@ -48,14 +48,14 @@ try {
 
     // Admin User einfügen (mit dem vom Builder generierten Hash)
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM `oxidpwauser` WHERE `username` = ?");
-    $stmt->execute(['stepan.kalina']);
+    $stmt->execute(['mustermann']);
     if ($stmt->fetchColumn() == 0) {
         $insertUser = $pdo->prepare("INSERT INTO `oxidpwauser` (`username`, `password_hash`) VALUES (?, ?)");
         // Hash ist fest einkompiliert, nicht Klartext!
-        $insertUser->execute(['stepan.kalina', '$2y$10$a5rQEf5oSJbvMwBj42OObO19CId1SgUinDlI1Oqlh/9GyBwQEw5rC']);
-        echo "=> User 'stepan.kalina' wurde erfolgreich angelegt.\n";
+        $insertUser->execute(['mustermann', '$2y$10$EKZ8.zr4hTXrk9YqOfXh0exC5qaN2QwR5K1pUfUs/gN6iWBMpPaKu']);
+        echo "=> User 'mustermann' wurde erfolgreich angelegt.\n";
     } else {
-        echo "=> User 'stepan.kalina' existiert bereits.\n";
+        echo "=> User 'mustermann' existiert bereits.\n";
     }
 
     $defaultConfigs = [
