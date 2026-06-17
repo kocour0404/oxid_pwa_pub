@@ -964,7 +964,7 @@ function renderCustomersList() {
                 <span>${displayTitle}</span>
                 <span>Kdnr: ${escapeHtml(custnr)}</span>
             </div>
-            ${badgesHtml ? \`<div class="order-item-meta" style="margin-bottom: 4px;">\${badgesHtml}</div>\` : ''}
+            ${badgesHtml ? `<div class="order-item-meta" style="margin-bottom: 4px;">${badgesHtml}</div>` : ''}
             <div class="order-item-meta" style="font-size: 0.75rem; color: #999;">${escapeHtml(customer.city)} (${escapeHtml(customer.country)}) &bull; Username: ${escapeHtml(customer.username)}</div>
         `;
         div.onclick = () => {
@@ -991,19 +991,19 @@ function loadCustomerDetail(customer) {
     const safeCustomerName = escapeHtml(nameStr || companyStr || customer.username);
 
     if (customer.has_orders) {
-        html += \`<div style="margin-bottom: 16px;">
-            <button class="primary-btn" onclick="loadCustomerHistory('\${safeUserId}', '\${safeCustomerName}'); return false;">Bestellhistorie ansehen</button>
-        </div>\`;
+        html += `<div style="margin-bottom: 16px;">
+            <button class="primary-btn" onclick="loadCustomerHistory('${safeUserId}', '${safeCustomerName}'); return false;">Bestellhistorie ansehen</button>
+        </div>`;
     }
 
-    html += \`<p><strong>Adresse:</strong></p>
-    <p>\${companyStr ? companyStr + '<br>' : ''}\${nameStr}<br>
-    \${escapeHtml(customer.street)} \${escapeHtml(customer.streetnr)}<br>
-    \${escapeHtml(customer.zip)} \${escapeHtml(customer.city)}<br>
-    \${escapeHtml(customer.country)}</p>\`;
+    html += `<p><strong>Adresse:</strong></p>
+    <p>${companyStr ? companyStr + '<br>' : ''}${nameStr}<br>
+    ${escapeHtml(customer.street)} ${escapeHtml(customer.streetnr)}<br>
+    ${escapeHtml(customer.zip)} ${escapeHtml(customer.city)}<br>
+    ${escapeHtml(customer.country)}</p>`;
     
-    html += \`<p><strong>Benutzername:</strong> \${escapeHtml(customer.username)}</p>\`;
-    html += \`<p><strong>Kundennummer:</strong> \${escapeHtml(customer.custnr || '-')}</p>\`;
+    html += `<p><strong>Benutzername:</strong> ${escapeHtml(customer.username)}</p>`;
+    html += `<p><strong>Kundennummer:</strong> ${escapeHtml(customer.custnr || '-')}</p>`;
 
     customerDetailContent.innerHTML = html;
 }
