@@ -59,6 +59,7 @@ async function loadStats() {
     const statsContent = document.getElementById('stats-content');
     const statMonthTotal = document.getElementById('stat-month-total');
     const statYearChart = document.getElementById('stat-year-chart');
+    const statMonthChart = document.getElementById('stat-month-chart');
 
     statsError.textContent = '';
     statsLoading.style.display = 'block';
@@ -70,21 +71,27 @@ async function loadStats() {
             // Render month total
             const total = Number(data.current_month).toFixed(2).replace('.', ',');
             statMonthTotal.innerHTML = `${total} &euro;`;
+            
+            const monthTitle = document.getElementById('stat-month-title');
+            if (monthTitle) {
+                const mName = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'][data.current_month_num - 1] || 'Laufender Monat';
+                monthTitle.textContent = `${mName} ${data.current_year}`;
+            }
 
-            // Render chart
+            // Render Year chart
             statYearChart.innerHTML = '';
             const months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
             const yearData = data.year_data || [];
             const historyData = data.history_data || [];
             
-            const maxVal = Math.max(...yearData, ...historyData, 1);
+            const maxValYear = Math.max(...yearData, ...historyData, 1);
 
             months.forEach((monthName, index) => {
                 const valYear = yearData[index] || 0;
                 const valHist = historyData[index] || 0;
                 
-                const pctYear = Math.max((valYear / maxVal) * 100, 1);
-                const pctHist = Math.max((valHist / maxVal) * 100, 1);
+                const pctYear = Math.max((valYear / maxValYear) * 100, 1);
+                const pctHist = Math.max((valHist / maxValYear) * 100, 1);
                 
                 const fmtYear = Number(valYear).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
                 const fmtHist = Number(valHist).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
@@ -115,6 +122,93 @@ async function loadStats() {
                 col.appendChild(label);
                 statYearChart.appendChild(col);
             });
+
+            // Render Month Chart
+            if (statMonthChart) {
+                statMonthChart.innerHTML = '';
+                const dailyData = data.month_daily_data || [];
+                const movingAvg = data.month_moving_avg || [];
+                
+                const maxValMonth = Math.max(...dailyData, ...movingAvg, 1);
+                
+                const barsWrapper = document.createElement('div');
+                barsWrapper.style.display = 'flex';
+                barsWrapper.style.width = '100%';
+                barsWrapper.style.height = '100%';
+                barsWrapper.style.justifyContent = 'space-between';
+                
+                const daysCount = dailyData.length;
+                
+                dailyData.forEach((valDay, index) => {
+                    const valAvg = movingAvg[index] || 0;
+                    const pctDay = Math.max((valDay / maxValMonth) * 100, 1);
+                    
+                    const fmtDay = Number(valDay).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+                    const fmtAvg = Number(valAvg).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+                    const dayNum = index + 1;
+                    
+                    const col = document.createElement('div');
+                    col.className = 'chart-col';
+                    col.title = `Tag ${dayNum}\nUmsatz: ${fmtDay}\n30-Tage Ø: ${fmtAvg}`;
+                    
+                    const barsContainer = document.createElement('div');
+                    barsContainer.className = 'chart-bars-container';
+                    
+                    const barDay = document.createElement('div');
+                    barDay.className = 'chart-bar';
+                    barDay.style.height = `${pctDay}%`;
+                    barDay.style.maxWidth = '8px'; // Narrower bars for daily
+                    
+                    barsContainer.appendChild(barDay);
+                    
+                    const label = document.createElement('div');
+                    label.className = 'chart-label';
+                    label.style.fontSize = '0.6rem';
+                    label.textContent = (dayNum % 5 === 0 || dayNum === 1) ? dayNum : '';
+                    
+                    col.appendChild(barsContainer);
+                    col.appendChild(label);
+                    barsWrapper.appendChild(col);
+                });
+                
+                // SVG Overlay
+                const svgOverlay = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svgOverlay.setAttribute('class', 'chart-svg-overlay');
+                svgOverlay.setAttribute('viewBox', '0 0 100 100');
+                svgOverlay.setAttribute('preserveAspectRatio', 'none');
+                svgOverlay.style.height = 'calc(100% - 24px)'; // Exclude labels
+                
+                let pathD = '';
+                movingAvg.forEach((valAvg, index) => {
+                    const x = (index + 0.5) / daysCount * 100;
+                    let y = 100 - ((valAvg / maxValMonth) * 100);
+                    if (y < 0) y = 0;
+                    if (y > 100) y = 100;
+                    
+                    if (index === 0) {
+                        pathD += `M ${x} ${y} `;
+                    } else {
+                        pathD += `L ${x} ${y} `;
+                    }
+                    
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', x);
+                    circle.setAttribute('cy', y);
+                    circle.setAttribute('r', '0.6');
+                    circle.setAttribute('class', 'chart-point');
+                    circle.setAttribute('vector-effect', 'non-scaling-stroke');
+                    svgOverlay.appendChild(circle);
+                });
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathD);
+                path.setAttribute('class', 'chart-line');
+                path.setAttribute('vector-effect', 'non-scaling-stroke');
+                svgOverlay.insertBefore(path, svgOverlay.firstChild);
+                
+                statMonthChart.appendChild(barsWrapper);
+                statMonthChart.appendChild(svgOverlay);
+            }
 
             statsLoading.style.display = 'none';
             statsContent.style.display = 'block';

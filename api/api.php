@@ -258,15 +258,55 @@ switch ($op) {
             $monthlyHistory = array_values($monthlyHistory);
 
             $jsonHistory = json_encode($monthlyHistory);
-            $stmtSave = $pwa->prepare("INSERT INTO oxidpwaconfig (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_value = ?");
-            $stmtSave->execute([$cacheKey, $jsonHistory, $jsonHistory]);
+        $stmtSave->execute([$cacheKey, $jsonHistory, $jsonHistory]);
         }
+
+        // --- NEW: Daily data & 30-day moving average ---
+        $daysInMonth = (int)date('t', strtotime(sprintf('%04d-%02d-01', $year, $month)));
+        $startDate = date('Y-m-d', strtotime(sprintf('%04d-%02d-01', $year, $month) . ' - 30 days'));
+        $endDate = sprintf('%04d-%02d-%02d', $year, $month, $daysInMonth);
+
+        $stmtDays = $oxid->prepare("
+            SELECT DATE(OXORDERDATE) as day_date, SUM(OXTOTALORDERSUM - OXDELCOST) as daily_net
+            FROM oxorder
+            WHERE OXORDERDATE >= ? AND OXORDERDATE <= ?
+              AND OXSTORNO = 0
+            GROUP BY DATE(OXORDERDATE)
+            ORDER BY day_date ASC
+        ");
+        $stmtDays->execute([$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+        $daysRaw = $stmtDays->fetchAll(PDO::FETCH_ASSOC);
+        
+        $dailyDataMap = [];
+        foreach ($daysRaw as $row) {
+            $dailyDataMap[$row['day_date']] = (float)$row['daily_net'];
+        }
+
+        $monthDailyData = [];
+        $monthMovingAvg = [];
+
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $currentDateStr = sprintf('%04d-%02d-%02d', $year, $month, $d);
+            $monthDailyData[] = $dailyDataMap[$currentDateStr] ?? 0.0;
+            
+            $sum30 = 0.0;
+            for ($i = 0; $i < 30; $i++) {
+                $pastDateStr = date('Y-m-d', strtotime("$currentDateStr - $i days"));
+                $sum30 += $dailyDataMap[$pastDateStr] ?? 0.0;
+            }
+            $monthMovingAvg[] = $sum30 / 30.0;
+        }
+        // --- END NEW ---
 
         json_response([
             'ok' => true,
             'current_month' => $currentMonthTotal,
             'year_data' => array_values($monthlyData),
-            'history_data' => $monthlyHistory
+            'history_data' => $monthlyHistory,
+            'month_daily_data' => $monthDailyData,
+            'month_moving_avg' => $monthMovingAvg,
+            'current_month_num' => $month,
+            'current_year' => $year
         ]);
 
     case 'orders.new':

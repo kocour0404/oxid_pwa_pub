@@ -208,9 +208,17 @@
 
                     <div class="stats-layout" id="stats-content" style="display: none;">
                         <div class="stat-card" style="margin-bottom: 24px;">
-                            <h3>Laufender Monat</h3>
+                            <h3 id="stat-month-title">Laufender Monat</h3>
                             <div class="stat-big-number" id="stat-month-total">0,00 &euro;</div>
-                            <p class="text-muted" style="font-size: 0.875rem;">Bestellwert ohne Versandkosten</p>
+                            <p class="text-muted" style="font-size: 0.875rem; margin-bottom: 24px;">Bestellwert ohne Versandkosten</p>
+                            
+                            <div class="chart-legend" style="display: flex; gap: 12px; margin-bottom: 16px; font-size: 0.85rem; color: var(--text-muted);">
+                                <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 12px; height: 12px; background: var(--primary-color); border-radius: 2px;"></div> Tagesumsatz</span>
+                                <span style="display: flex; align-items: center; gap: 4px;"><div style="width: 16px; height: 2px; background: #ef4444;"></div> 30-Tage Ø</span>
+                            </div>
+                            <div class="chart-container" id="stat-month-chart" style="position: relative;">
+                                <!-- Bars & Line injected by JS -->
+                            </div>
                         </div>
                         
                         <div class="stat-card">
