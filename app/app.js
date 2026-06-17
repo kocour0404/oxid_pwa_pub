@@ -741,11 +741,27 @@ navLinks.forEach(link => {
     });
 });
 
-tileOrders.addEventListener('click', () => switchView('orders-view'));
-tileSearch.addEventListener('click', () => switchView('order-search-view'));
-tileSettings.addEventListener('click', () => switchView('settings-view'));
-tileStats.addEventListener('click', () => switchView('stats-view'));
-tileTopseller.addEventListener('click', () => switchView('topseller-view'));
+const handleTileClick = (e, viewName) => {
+    if (e.type === 'click' || (e.type === 'keydown' && (e.key === 'Enter' || e.key === ' '))) {
+        e.preventDefault();
+        switchView(viewName);
+    }
+};
+
+tileOrders.addEventListener('click', (e) => handleTileClick(e, 'orders-view'));
+tileOrders.addEventListener('keydown', (e) => handleTileClick(e, 'orders-view'));
+
+tileSearch.addEventListener('click', (e) => handleTileClick(e, 'order-search-view'));
+tileSearch.addEventListener('keydown', (e) => handleTileClick(e, 'order-search-view'));
+
+tileSettings.addEventListener('click', (e) => handleTileClick(e, 'settings-view'));
+tileSettings.addEventListener('keydown', (e) => handleTileClick(e, 'settings-view'));
+
+tileStats.addEventListener('click', (e) => handleTileClick(e, 'stats-view'));
+tileStats.addEventListener('keydown', (e) => handleTileClick(e, 'stats-view'));
+
+tileTopseller.addEventListener('click', (e) => handleTileClick(e, 'topseller-view'));
+tileTopseller.addEventListener('keydown', (e) => handleTileClick(e, 'topseller-view'));
 
 // Event Listeners
 loginForm.addEventListener('submit', (e) => {

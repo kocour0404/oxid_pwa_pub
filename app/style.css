@@ -221,6 +221,12 @@ body {
     box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
+/* Focus Styles for Accessibility */
+:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 /* Buttons */
 .primary-btn {
     background-color: var(--primary-color);
