@@ -258,7 +258,8 @@ switch ($op) {
             $monthlyHistory = array_values($monthlyHistory);
 
             $jsonHistory = json_encode($monthlyHistory);
-        $stmtSave->execute([$cacheKey, $jsonHistory, $jsonHistory]);
+            $stmtSave = $pwa->prepare("INSERT INTO oxidpwaconfig (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_value = ?");
+            $stmtSave->execute([$cacheKey, $jsonHistory, $jsonHistory]);
         }
 
         // --- NEW: Daily data & 30-day moving average ---
