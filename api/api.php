@@ -347,10 +347,10 @@ switch ($op) {
         } elseif ($period === 'prev_year') {
             $where .= " AND YEAR(o.OXORDERDATE) = ?";
             $params = [$year - 1];
-            $cacheKey = "topseller_prev_year_" . ($year - 1);
+            $cacheKey = "topseller_v2_prev_year_" . ($year - 1);
         } elseif ($period === 'all_time') {
             // no additional where
-            $cacheKey = "topseller_all_time";
+            $cacheKey = "topseller_v2_all_time";
         } else {
             json_response(['ok' => false, 'error' => 'invalid_period'], 400);
         }
@@ -384,7 +384,8 @@ switch ($op) {
                 a.OXARTNUM as sku, 
                 MAX(a.OXTITLE) as name, 
                 SUM(a.OXAMOUNT) as qty, 
-                SUM(a.OXPRICE) as revenue
+                SUM(a.OXPRICE) as revenue,
+                MAX(a.OXPRICE / NULLIF(a.OXAMOUNT, 0)) as unit_price
             FROM oxorderarticles a
             JOIN oxorder o ON o.OXID = a.OXORDERID
             WHERE $where
@@ -400,6 +401,7 @@ switch ($op) {
         foreach ($articles as &$a) {
             $a['qty'] = (float)$a['qty'];
             $a['revenue'] = (float)$a['revenue'];
+            $a['unit_price'] = (float)$a['unit_price'];
             $total_qty += $a['qty'];
         }
 

@@ -275,6 +275,7 @@ function renderTopSellers(articles, totalQty) {
 
         const qty = Number(art.qty);
         const revenue = Number(art.revenue).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+        const unitPrice = Number(art.unit_price || 0).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
         const pct = totalQty > 0 ? (qty / totalQty) * 100 : 0;
         
         div.innerHTML = `
@@ -283,7 +284,7 @@ function renderTopSellers(articles, totalQty) {
                 <span>${qty}x</span>
             </div>
             <div class="order-item-meta" style="margin-bottom: 8px;">
-                Artikel-Nr: ${art.sku} &bull; Umsatz: ${revenue}
+                Artikel-Nr: ${art.sku} &bull; Einzelpreis (Ø): ${unitPrice} &bull; Kumulierter Umsatz: ${revenue}
             </div>
             <div style="width: 100%; background: var(--border-color); height: 4px; border-radius: 2px; overflow: hidden;">
                 <div style="width: ${pct}%; background: var(--primary-color); height: 100%;"></div>
