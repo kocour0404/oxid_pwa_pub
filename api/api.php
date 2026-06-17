@@ -631,6 +631,63 @@ switch ($op) {
             'status' => 'OK'
         ]);
 
+    case 'customers.search':
+        require_method('GET');
+        require_auth();
+        $query = trim($_GET['query'] ?? '');
+        $limit = 50;
+
+        if (empty($query)) {
+            json_response(['ok' => false, 'error' => 'missing_query'], 400);
+        }
+
+        $oxid = get_oxid_pdo();
+        $searchQuery = "%{$query}%";
+        
+        $stmt = $oxid->prepare("
+            SELECT 
+                u.OXID as id,
+                u.OXUSERNAME as username,
+                u.OXCUSTNR as custnr,
+                u.OXFNAME as fname,
+                u.OXLNAME as lname,
+                u.OXCOMPANY as company,
+                u.OXSTREET as street,
+                u.OXSTREETNR as streetnr,
+                u.OXCITY as city,
+                u.OXZIP as zip,
+                c.OXTITLE as country
+            FROM oxuser u
+            LEFT JOIN oxcountry c ON u.OXCOUNTRYID = c.OXID
+            WHERE u.OXUSERNAME LIKE :q
+               OR u.OXCUSTNR LIKE :q
+               OR u.OXLNAME LIKE :q
+               OR u.OXCOMPANY LIKE :q
+            ORDER BY u.OXLNAME ASC, u.OXFNAME ASC
+            LIMIT :limit
+        ");
+        
+        $stmt->bindValue(':q', $searchQuery, PDO::PARAM_STR);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        $customers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Check for orders
+        if (!empty($customers)) {
+            $userIds = array_column($customers, 'id');
+            $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+            $orderStmt = $oxid->prepare("SELECT DISTINCT OXUSERID FROM oxorder WHERE OXUSERID IN ($placeholders)");
+            $orderStmt->execute($userIds);
+            $usersWithOrders = $orderStmt->fetchAll(PDO::FETCH_COLUMN);
+            $usersWithOrdersSet = array_flip($usersWithOrders);
+
+            foreach ($customers as &$c) {
+                $c['has_orders'] = isset($usersWithOrdersSet[$c['id']]);
+            }
+        }
+
+        json_response(['ok' => true, 'customers' => $customers]);
+
     default:
         json_response(['ok' => false, 'error' => 'unknown_operation'], 404);
 }

@@ -43,6 +43,7 @@
                     <li><a href="#" data-target="order-search-view" class="nav-link">Bestellung suchen</a></li>
                     <li><a href="#" data-target="stats-view" class="nav-link">Statistiken</a></li>
                     <li><a href="#" data-target="topseller-view" class="nav-link">Top Seller</a></li>
+                    <li><a href="#" data-target="customers-view" class="nav-link">Kunden</a></li>
                     <li><a href="#" data-target="settings-view" class="nav-link">Einstellungen</a></li>
                 </ul>
             <div class="sidebar-footer">
@@ -109,6 +110,13 @@
                             </div>
                             <h3>Top Seller</h3>
                             <p>Die bestverkauften Artikel</p>
+                        </div>
+                        <div class="tile" id="tile-customers" role="button" tabindex="0">
+                            <div class="tile-icon">
+                                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            </div>
+                            <h3>Kunden</h3>
+                            <p>Kunden suchen und verwalten</p>
                         </div>
                         <div class="tile" id="tile-settings" role="button" tabindex="0">
                         <div class="tile-icon">
@@ -262,6 +270,36 @@
 
                     <div class="orders-list-container" id="topseller-list" style="display: none;">
                         <!-- List injected by JS -->
+                    </div>
+                </div>
+
+                <!-- Customers View -->
+                <div id="customers-view" class="view" style="display: none;">
+                    <div class="view-header">
+                        <h2>Kunden</h2>
+                    </div>
+
+                    <div class="login-card" style="margin: 0 0 24px 0; max-width: 100%;">
+                        <form id="customers-search-form" style="display: flex; gap: 12px; align-items: flex-end;">
+                            <div class="form-group" style="margin: 0; flex: 1;">
+                                <label for="customers-search-query">Suchen nach (Name, Firma, KdNr, Username)</label>
+                                <input type="text" id="customers-search-query" required placeholder="z.B. Mustermann">
+                            </div>
+                            <button type="submit" class="primary-btn">Suchen</button>
+                        </form>
+                    </div>
+
+                    <div id="customers-error" class="error-msg"></div>
+                    <div id="customers-loading" class="spinner" style="margin-top: 40px; display: none;"></div>
+
+                    <div class="orders-layout">
+                        <div style="flex: 1; display: flex; flex-direction: column;">
+                            <div id="customers-list" class="orders-list-container"></div>
+                        </div>
+                        <div id="customer-detail" class="order-detail-container" style="display: none;">
+                            <h3 id="customer-detail-title"></h3>
+                            <div id="customer-detail-content" class="detail-content"></div>
+                        </div>
                     </div>
                 </div>
 

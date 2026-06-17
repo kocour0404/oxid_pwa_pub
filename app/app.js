@@ -16,6 +16,8 @@ const state = {
     user: null,
     orders: [],
     selectedOrder: null,
+    customers: [],
+    selectedCustomer: null,
     currentView: 'loading-view'
 };
 
@@ -29,7 +31,8 @@ const views = {
     orderSearch: document.getElementById('order-search-view'),
     stats: document.getElementById('stats-view'),
     topseller: document.getElementById('topseller-view'),
-    customerHistory: document.getElementById('customer-history-view')
+    customerHistory: document.getElementById('customer-history-view'),
+    customers: document.getElementById('customers-view')
 };
 
 // Nav & Sidebar
@@ -52,6 +55,7 @@ const tileSearch = document.getElementById('tile-search');
 const tileSettings = document.getElementById('tile-settings');
 const tileStats = document.getElementById('tile-stats');
 const tileTopseller = document.getElementById('tile-topseller');
+const tileCustomers = document.getElementById('tile-customers');
 
 // Init
 function init() {
@@ -329,6 +333,16 @@ const customerHistoryTitle = document.getElementById('customer-history-title');
 const customerHistoryError = document.getElementById('customer-history-error');
 const customerHistoryBackBtn = document.getElementById('customer-history-back-btn');
 
+// Customers DOM
+const customersSearchForm = document.getElementById('customers-search-form');
+const customersSearchQuery = document.getElementById('customers-search-query');
+const customersError = document.getElementById('customers-error');
+const customersLoading = document.getElementById('customers-loading');
+const customersList = document.getElementById('customers-list');
+const customerDetail = document.getElementById('customer-detail');
+const customerDetailTitle = document.getElementById('customer-detail-title');
+const customerDetailContent = document.getElementById('customer-detail-content');
+
 // Settings
 const settingsForm = document.getElementById('settings-form');
 const settingsMsg = document.getElementById('settings-msg');
@@ -588,6 +602,9 @@ function switchView(viewId) {
     if (viewId === 'order-search-view') {
         resetSearchView();
     }
+    if (viewId === 'customers-view') {
+        resetCustomersView();
+    }
 }
 
 function resetSearchView() {
@@ -763,6 +780,11 @@ tileStats.addEventListener('keydown', (e) => handleTileClick(e, 'stats-view'));
 tileTopseller.addEventListener('click', (e) => handleTileClick(e, 'topseller-view'));
 tileTopseller.addEventListener('keydown', (e) => handleTileClick(e, 'topseller-view'));
 
+if (tileCustomers) {
+    tileCustomers.addEventListener('click', (e) => handleTileClick(e, 'customers-view'));
+    tileCustomers.addEventListener('keydown', (e) => handleTileClick(e, 'customers-view'));
+}
+
 // Event Listeners
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -881,6 +903,109 @@ if (footerPrivacyLink) {
             alert('Netzwerkfehler beim Laden des Datenschutz-Links.');
         }
     });
+}
+
+// Customers Logic
+function resetCustomersView() {
+    if (customersSearchForm) customersSearchForm.reset();
+    customersError.textContent = '';
+    customersList.innerHTML = '';
+    if (customerDetail) customerDetail.style.display = 'none';
+    if (customersLoading) customersLoading.style.display = 'none';
+}
+
+if (customersSearchForm) {
+    customersSearchForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const query = customersSearchQuery.value;
+        customersError.textContent = '';
+        customersList.innerHTML = '';
+        customerDetail.style.display = 'none';
+        customersLoading.style.display = 'block';
+
+        try {
+            const data = await apiGet('customers.search', { query });
+            if (data.ok) {
+                state.customers = data.customers;
+                renderCustomersList();
+            } else {
+                customersError.textContent = 'Fehler: ' + data.error;
+            }
+        } catch (err) {
+            customersError.textContent = 'Netzwerkfehler.';
+        } finally {
+            customersLoading.style.display = 'none';
+        }
+    });
+}
+
+function renderCustomersList() {
+    customersList.innerHTML = '';
+    if (!state.customers || state.customers.length === 0) {
+        customersList.innerHTML = '<p class="text-muted" style="padding: 16px;">Keine Kunden gefunden.</p>';
+        return;
+    }
+
+    state.customers.forEach(customer => {
+        const div = document.createElement('div');
+        div.className = 'order-item';
+        div.id = `customer-item-${customer.id}`;
+        
+        let badgesHtml = '';
+        if (customer.has_orders) badgesHtml += '<span class="badge badge-paid">Hat bestellt</span>';
+        
+        const custnr = customer.custnr ? customer.custnr : '-';
+        const nameStr = escapeHtml((customer.fname + ' ' + customer.lname).trim());
+        const companyStr = customer.company ? escapeHtml(customer.company) : '';
+        const displayTitle = companyStr ? `${companyStr} (${nameStr})` : nameStr;
+
+        div.innerHTML = `
+            <div class="order-item-header">
+                <span>${displayTitle}</span>
+                <span>Kdnr: ${escapeHtml(custnr)}</span>
+            </div>
+            ${badgesHtml ? \`<div class="order-item-meta" style="margin-bottom: 4px;">\${badgesHtml}</div>\` : ''}
+            <div class="order-item-meta" style="font-size: 0.75rem; color: #999;">${escapeHtml(customer.city)} (${escapeHtml(customer.country)}) &bull; Username: ${escapeHtml(customer.username)}</div>
+        `;
+        div.onclick = () => {
+            customersList.querySelectorAll('.order-item').forEach(el => el.classList.remove('active'));
+            div.classList.add('active');
+            loadCustomerDetail(customer);
+        };
+        customersList.appendChild(div);
+    });
+}
+
+function loadCustomerDetail(customer) {
+    state.selectedCustomer = customer;
+    customerDetail.style.display = 'block';
+    
+    const nameStr = escapeHtml((customer.fname + ' ' + customer.lname).trim());
+    const companyStr = customer.company ? escapeHtml(customer.company) : '';
+    const displayTitle = companyStr ? `${companyStr} (${nameStr})` : nameStr;
+    
+    customerDetailTitle.textContent = displayTitle;
+
+    let html = '';
+    const safeUserId = escapeHtml(customer.id);
+    const safeCustomerName = escapeHtml(nameStr || companyStr || customer.username);
+
+    if (customer.has_orders) {
+        html += \`<div style="margin-bottom: 16px;">
+            <button class="primary-btn" onclick="loadCustomerHistory('\${safeUserId}', '\${safeCustomerName}'); return false;">Bestellhistorie ansehen</button>
+        </div>\`;
+    }
+
+    html += \`<p><strong>Adresse:</strong></p>
+    <p>\${companyStr ? companyStr + '<br>' : ''}\${nameStr}<br>
+    \${escapeHtml(customer.street)} \${escapeHtml(customer.streetnr)}<br>
+    \${escapeHtml(customer.zip)} \${escapeHtml(customer.city)}<br>
+    \${escapeHtml(customer.country)}</p>\`;
+    
+    html += \`<p><strong>Benutzername:</strong> \${escapeHtml(customer.username)}</p>\`;
+    html += \`<p><strong>Kundennummer:</strong> \${escapeHtml(customer.custnr || '-')}</p>\`;
+
+    customerDetailContent.innerHTML = html;
 }
 
 // Register Service Worker
