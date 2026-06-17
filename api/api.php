@@ -384,8 +384,7 @@ switch ($op) {
                 a.OXARTNUM as sku, 
                 MAX(a.OXTITLE) as name, 
                 SUM(a.OXAMOUNT) as qty, 
-                SUM(a.OXPRICE) as revenue,
-                MAX(a.OXPRICE / NULLIF(a.OXAMOUNT, 0)) as unit_price
+                SUM(a.OXPRICE * a.OXAMOUNT) as revenue
             FROM oxorderarticles a
             JOIN oxorder o ON o.OXID = a.OXORDERID
             WHERE $where
@@ -401,7 +400,7 @@ switch ($op) {
         foreach ($articles as &$a) {
             $a['qty'] = (float)$a['qty'];
             $a['revenue'] = (float)$a['revenue'];
-            $a['unit_price'] = (float)$a['unit_price'];
+            $a['unit_price'] = $a['qty'] > 0 ? $a['revenue'] / $a['qty'] : 0;
             $total_qty += $a['qty'];
         }
 
