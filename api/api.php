@@ -200,7 +200,7 @@ switch ($op) {
         $pdo = get_pdo();
         $stmt = $pdo->prepare("INSERT INTO oxidpwaconfig (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_value = ?");
         
-        $allowed_keys = ['shop_db_host', 'shop_db_user', 'shop_db_pass', 'shop_db_name'];
+        $allowed_keys = ['shop_db_host', 'shop_db_user', 'shop_db_pass', 'shop_db_name', 'privacy_url'];
         foreach ($allowed_keys as $key) {
             if (isset($body[$key])) {
                 $val = $body[$key];
@@ -211,6 +211,14 @@ switch ($op) {
             }
         }
         json_response(['ok' => true]);
+
+    case 'config.privacy':
+        require_method('GET');
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare("SELECT config_value FROM oxidpwaconfig WHERE config_key = 'privacy_url'");
+        $stmt->execute();
+        $url = $stmt->fetchColumn();
+        json_response(['ok' => true, 'privacy_url' => $url ?: '']);
 
     case 'cache.prune':
         require_method('POST');

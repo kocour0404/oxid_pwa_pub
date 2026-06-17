@@ -456,6 +456,7 @@ async function loadConfig() {
             settingsForm.shop_db_user.value = conf.shop_db_user || '';
             settingsForm.shop_db_pass.value = conf.shop_db_pass || '';
             settingsForm.shop_db_name.value = conf.shop_db_name || '';
+            settingsForm.privacy_url.value = conf.privacy_url || '';
             settingsMsg.textContent = '';
         } else {
             settingsMsg.className = 'error-msg';
@@ -474,7 +475,8 @@ async function saveConfig() {
         shop_db_host: settingsForm.shop_db_host.value,
         shop_db_user: settingsForm.shop_db_user.value,
         shop_db_pass: settingsForm.shop_db_pass.value,
-        shop_db_name: settingsForm.shop_db_name.value
+        shop_db_name: settingsForm.shop_db_name.value,
+        privacy_url: settingsForm.privacy_url.value
     };
     try {
         const data = await apiPost('config.set', payload);
@@ -829,6 +831,23 @@ async function loadCustomerHistory(userId, customerName) {
         customerHistoryError.textContent = 'Netzwerkfehler.';
         customerHistoryResults.innerHTML = '';
     }
+}
+
+const footerPrivacyLink = document.getElementById('footer-privacy-link');
+if (footerPrivacyLink) {
+    footerPrivacyLink.addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+            const data = await fetch('../api/api.php?op=config.privacy').then(r => r.json());
+            if (data.ok && data.privacy_url) {
+                window.open(data.privacy_url, '_blank', 'noopener');
+            } else {
+                alert('Kein Datenschutz-Link in den Einstellungen konfiguriert.');
+            }
+        } catch(err) {
+            alert('Netzwerkfehler beim Laden des Datenschutz-Links.');
+        }
+    });
 }
 
 // Register Service Worker
