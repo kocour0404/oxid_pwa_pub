@@ -28,7 +28,7 @@ Das System basiert auf einer Dual-Database-Architektur, um maximale Sicherheit u
 4. **Bestellungen (Neu):** Paginierte Liste der neuesten Bestellungen inkl. Status-Badges (Bezahlt, Storno, Versendet) und Ladefunktion (10 pro Seite).
 5. **Bestellsuche:** Gezielte Suche nach einer OXID-Bestellnummer (`OXORDERNR`). (Geschützt gegen SQL-Injection durch sichere PDO Prepared Statements).
 6. **Bestell-Details:** Zeigt Kundeninformationen, Bestellsummen (inkl. Versand) und die gekauften Artikel an.
-7. **Statistiken:** Performantes, gecachtes Dashboard zur Auswertung der Netto-Umsätze (exkl. Versand/Storno) für den laufenden Monat sowie ein interaktives Zero-Dependency Jahres-Balkendiagramm inkl. historischer Vergleichswerte.
+7. **Statistiken:** Performantes, gecachtes Dashboard zur Auswertung der Netto-Umsätze (exkl. Versand/Storno). Bietet ein tagesaktuelles Balkendiagramm für den laufenden Monat inklusive gleitendem 30-Tage-Durchschnitt als Trendlinie, sowie ein interaktives Zero-Dependency Jahres-Balkendiagramm inkl. historischer Vergleichswerte.
 
 ## Installationsprozess
 
