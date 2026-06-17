@@ -16,7 +16,8 @@ const views = {
     orders: document.getElementById('orders-view'),
     settings: document.getElementById('settings-view'),
     orderSearch: document.getElementById('order-search-view'),
-    stats: document.getElementById('stats-view')
+    stats: document.getElementById('stats-view'),
+    customerHistory: document.getElementById('customer-history-view')
 };
 
 // Nav & Sidebar
