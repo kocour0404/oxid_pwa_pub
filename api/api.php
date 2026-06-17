@@ -100,6 +100,30 @@ function get_oxid_pdo(): PDO {
     }
 }
 
+// ⚡ Bolt: Performance Optimization
+// Batches article queries to avoid N+1 problem on list endpoints
+function attach_order_items(PDO $oxid, array &$orders): void {
+    if (empty($orders)) {
+        return;
+    }
+    $orderIds = array_column($orders, 'id');
+    $placeholders = implode(',', array_fill(0, count($orderIds), '?'));
+    $stmt = $oxid->prepare("SELECT OXORDERID as order_id, OXARTNUM as sku, OXTITLE as name, OXAMOUNT as qty, OXPRICE as price FROM oxorderarticles WHERE OXORDERID IN ($placeholders)");
+    $stmt->execute($orderIds);
+    $articles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $itemsByOrderId = [];
+    foreach ($articles as $article) {
+        $orderId = $article['order_id'];
+        unset($article['order_id']);
+        $itemsByOrderId[$orderId][] = $article;
+    }
+
+    foreach ($orders as &$o) {
+        $o['items'] = $itemsByOrderId[$o['id']] ?? [];
+    }
+}
+
 $op = $_GET['op'] ?? '';
 
 switch ($op) {
@@ -454,12 +478,7 @@ switch ($op) {
         $stmt->execute();
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $artStmt = $oxid->prepare("SELECT OXARTNUM as sku, OXTITLE as name, OXAMOUNT as qty, OXPRICE as price FROM oxorderarticles WHERE OXORDERID = ?");
-        
-        foreach ($orders as &$o) {
-            $artStmt->execute([$o['id']]);
-            $o['items'] = $artStmt->fetchAll(PDO::FETCH_ASSOC);
-        }
+        attach_order_items($oxid, $orders);
 
         json_response([
             'ok' => true,
@@ -548,11 +567,7 @@ switch ($op) {
         $stmt->execute();
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $artStmt = $oxid->prepare("SELECT OXARTNUM as sku, OXTITLE as name, OXAMOUNT as qty, OXPRICE as price FROM oxorderarticles WHERE OXORDERID = ?");
-        foreach ($orders as &$o) {
-            $artStmt->execute([$o['id']]);
-            $o['items'] = $artStmt->fetchAll(PDO::FETCH_ASSOC);
-        }
+        attach_order_items($oxid, $orders);
         json_response(['ok' => true, 'orders' => $orders]);
 
     case 'orders.by_customer':
@@ -592,11 +607,7 @@ switch ($op) {
         $stmt->execute();
         $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $artStmt = $oxid->prepare("SELECT OXARTNUM as sku, OXTITLE as name, OXAMOUNT as qty, OXPRICE as price FROM oxorderarticles WHERE OXORDERID = ?");
-        foreach ($orders as &$o) {
-            $artStmt->execute([$o['id']]);
-            $o['items'] = $artStmt->fetchAll(PDO::FETCH_ASSOC);
-        }
+        attach_order_items($oxid, $orders);
         json_response(['ok' => true, 'orders' => $orders]);
 
     case 'order.ship':
