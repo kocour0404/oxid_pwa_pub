@@ -36,6 +36,7 @@ const views = {
 };
 
 // Nav & Sidebar
+const mainLogo = document.getElementById('main-logo');
 const headerLogoutBtn = document.getElementById('header-logout-btn');
 const burgerBtn = document.getElementById('burger-btn');
 const sidebar = document.getElementById('sidebar');
@@ -758,6 +759,17 @@ navLinks.forEach(link => {
     });
 });
 
+if (mainLogo) {
+    const goHome = (e) => {
+        if (state.authenticated && (e.type === 'click' || (e.type === 'keydown' && (e.key === 'Enter' || e.key === ' ')))) {
+            e.preventDefault();
+            switchView('dashboard-view');
+        }
+    };
+    mainLogo.addEventListener('click', goHome);
+    mainLogo.addEventListener('keydown', goHome);
+}
+
 const handleTileClick = (e, viewName) => {
     if (e.type === 'click' || (e.type === 'keydown' && (e.key === 'Enter' || e.key === ' '))) {
         e.preventDefault();
@@ -992,7 +1004,10 @@ function loadCustomerDetail(customer) {
 
     if (customer.has_orders) {
         html += `<div style="margin-bottom: 16px;">
-            <button class="primary-btn" onclick="loadCustomerHistory('${safeUserId}', '${safeCustomerName}'); return false;">Bestellhistorie ansehen</button>
+            <button class="secondary-btn" onclick="loadCustomerHistory('${safeUserId}', '${safeCustomerName}'); return false;">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Bestellhistorie
+            </button>
         </div>`;
     }
 

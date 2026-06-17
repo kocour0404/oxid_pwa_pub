@@ -15,7 +15,7 @@
     <div id="app-wrapper">
         <header id="main-header">
             <div class="header-left">
-                <div class="logo">
+                <div class="logo" id="main-logo" role="button" tabindex="0" style="cursor: pointer;" title="Zum Dashboard">
                     <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
                     <span>Order PWA</span>
                 </div>
@@ -39,11 +39,11 @@
             </div>
                 <ul class="sidebar-links">
                     <li><a href="#" data-target="dashboard-view" class="nav-link active">Dashboard</a></li>
+                    <li><a href="#" data-target="customers-view" class="nav-link">Kunden</a></li>
                     <li><a href="#" data-target="orders-view" class="nav-link">Neue Bestellungen</a></li>
                     <li><a href="#" data-target="order-search-view" class="nav-link">Bestellung suchen</a></li>
                     <li><a href="#" data-target="stats-view" class="nav-link">Statistiken</a></li>
                     <li><a href="#" data-target="topseller-view" class="nav-link">Top Seller</a></li>
-                    <li><a href="#" data-target="customers-view" class="nav-link">Kunden</a></li>
                     <li><a href="#" data-target="settings-view" class="nav-link">Einstellungen</a></li>
                 </ul>
             <div class="sidebar-footer">
@@ -83,6 +83,13 @@
                 <h2>Hallo, <span id="user-name-display"></span></h2>
                 <p class="subtitle">Wähle einen Endpoint aus:</p>
                 <div class="tile-grid">
+                    <div class="tile" id="tile-customers" role="button" tabindex="0">
+                        <div class="tile-icon">
+                            <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        </div>
+                        <h3>Kunden</h3>
+                        <p>Kunden suchen und verwalten</p>
+                    </div>
                     <div class="tile" id="tile-orders" role="button" tabindex="0">
                         <div class="tile-icon">
                             <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
@@ -110,13 +117,6 @@
                             </div>
                             <h3>Top Seller</h3>
                             <p>Die bestverkauften Artikel</p>
-                        </div>
-                        <div class="tile" id="tile-customers" role="button" tabindex="0">
-                            <div class="tile-icon">
-                                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                            </div>
-                            <h3>Kunden</h3>
-                            <p>Kunden suchen und verwalten</p>
                         </div>
                         <div class="tile" id="tile-settings" role="button" tabindex="0">
                         <div class="tile-icon">
