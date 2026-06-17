@@ -188,6 +188,15 @@ switch ($op) {
         }
         json_response(['ok' => true]);
 
+    case 'cache.prune':
+        require_method('POST');
+        require_auth();
+        require_csrf();
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare("DELETE FROM oxidpwaconfig WHERE config_key LIKE 'history_avg_%' OR config_key LIKE 'topseller_%'");
+        $stmt->execute();
+        json_response(['ok' => true]);
+
     case 'stats.get':
         require_method('GET');
         require_auth();
@@ -308,6 +317,104 @@ switch ($op) {
             'month_moving_avg' => $monthMovingAvg,
             'current_month_num' => $month,
             'current_year' => $year
+        ]);
+
+    case 'stats.topseller':
+        require_method('GET');
+        require_auth();
+        $period = $_GET['period'] ?? 'month';
+        $oxid = get_oxid_pdo();
+
+        $latestDate = $oxid->query("SELECT MAX(OXORDERDATE) FROM oxorder")->fetchColumn();
+        if ($latestDate) {
+            $year = (int)date('Y', strtotime($latestDate));
+            $month = (int)date('m', strtotime($latestDate));
+        } else {
+            $year = (int)date('Y');
+            $month = (int)date('m');
+        }
+
+        $where = "o.OXSTORNO = 0";
+        $params = [];
+        $cacheKey = null;
+
+        if ($period === 'month') {
+            $where .= " AND YEAR(o.OXORDERDATE) = ? AND MONTH(o.OXORDERDATE) = ?";
+            $params = [$year, $month];
+        } elseif ($period === 'year') {
+            $where .= " AND YEAR(o.OXORDERDATE) = ?";
+            $params = [$year];
+        } elseif ($period === 'prev_year') {
+            $where .= " AND YEAR(o.OXORDERDATE) = ?";
+            $params = [$year - 1];
+            $cacheKey = "topseller_prev_year_" . ($year - 1);
+        } elseif ($period === 'all_time') {
+            // no additional where
+            $cacheKey = "topseller_all_time";
+        } else {
+            json_response(['ok' => false, 'error' => 'invalid_period'], 400);
+        }
+
+        $pwa = get_pdo();
+        
+        if ($cacheKey) {
+            $stmtCache = $pwa->prepare("SELECT config_value FROM oxidpwaconfig WHERE config_key = ?");
+            $stmtCache->execute([$cacheKey]);
+            $cachedData = $stmtCache->fetchColumn();
+            if ($cachedData) {
+                $cachedArticles = json_decode($cachedData, true);
+                
+                $total_qty = 0;
+                foreach ($cachedArticles as $a) {
+                    $total_qty += (float)$a['qty'];
+                }
+                
+                json_response([
+                    'ok' => true, 
+                    'period' => $period, 
+                    'articles' => $cachedArticles,
+                    'total_top10_qty' => $total_qty,
+                    'cached' => true
+                ]);
+            }
+        }
+
+        $stmt = $oxid->prepare("
+            SELECT 
+                a.OXARTNUM as sku, 
+                MAX(a.OXTITLE) as name, 
+                SUM(a.OXAMOUNT) as qty, 
+                SUM(a.OXPRICE) as revenue
+            FROM oxorderarticles a
+            JOIN oxorder o ON o.OXID = a.OXORDERID
+            WHERE $where
+            GROUP BY a.OXARTNUM
+            ORDER BY qty DESC, revenue DESC
+            LIMIT 10
+        ");
+        $stmt->execute($params);
+        $articles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Calculate total qty and total revenue for percentage bar calculation in frontend
+        $total_qty = 0;
+        foreach ($articles as &$a) {
+            $a['qty'] = (float)$a['qty'];
+            $a['revenue'] = (float)$a['revenue'];
+            $total_qty += $a['qty'];
+        }
+
+        if ($cacheKey) {
+            $jsonArticles = json_encode($articles);
+            $stmtSave = $pwa->prepare("INSERT INTO oxidpwaconfig (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_value = ?");
+            $stmtSave->execute([$cacheKey, $jsonArticles, $jsonArticles]);
+        }
+
+        json_response([
+            'ok' => true, 
+            'period' => $period, 
+            'articles' => $articles,
+            'total_top10_qty' => $total_qty,
+            'cached' => false
         ]);
 
     case 'orders.new':

@@ -42,6 +42,7 @@
                     <li><a href="#" data-target="orders-view" class="nav-link">Neue Bestellungen</a></li>
                     <li><a href="#" data-target="order-search-view" class="nav-link">Bestellung suchen</a></li>
                     <li><a href="#" data-target="stats-view" class="nav-link">Statistiken</a></li>
+                    <li><a href="#" data-target="topseller-view" class="nav-link">Top Seller</a></li>
                     <li><a href="#" data-target="settings-view" class="nav-link">Einstellungen</a></li>
                 </ul>
             <div class="sidebar-footer">
@@ -101,6 +102,13 @@
                             </div>
                             <h3>Statistiken</h3>
                             <p>Umsätze und Auswertungen</p>
+                        </div>
+                        <div class="tile" id="tile-topseller">
+                            <div class="tile-icon">
+                                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            </div>
+                            <h3>Top Seller</h3>
+                            <p>Die bestverkauften Artikel</p>
                         </div>
                         <div class="tile" id="tile-settings">
                         <div class="tile-icon">
@@ -234,6 +242,29 @@
                     </div>
                 </div>
 
+                <!-- Top Seller View -->
+                <div id="topseller-view" class="view" style="display: none;">
+                    <div class="view-header">
+                        <h2>Top Seller (Top 10)</h2>
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <div class="chart-legend" style="display: flex; gap: 12px;">
+                            <button class="page-btn active" id="btn-ts-month">Laufender Monat</button>
+                            <button class="page-btn" id="btn-ts-year">Laufendes Jahr</button>
+                            <button class="page-btn" id="btn-ts-prev_year">Vorjahr</button>
+                            <button class="page-btn" id="btn-ts-all_time">All-time</button>
+                        </div>
+                    </div>
+
+                    <div id="topseller-error" class="error-msg"></div>
+                    <div id="topseller-loading" class="spinner" style="margin-top: 40px; display: none;"></div>
+
+                    <div class="orders-list-container" id="topseller-list" style="display: none;">
+                        <!-- List injected by JS -->
+                    </div>
+                </div>
+
                 <!-- Settings View -->
             <div id="settings-view" class="view" style="display: none;">
                 <h2>Einstellungen</h2>
@@ -259,6 +290,15 @@
                         <button type="submit" class="primary-btn mt-10">Speichern</button>
                         <div id="settings-msg" class="success-msg"></div>
                     </form>
+                </div>
+                
+                <div class="login-card" style="margin: 24px 0 0 0; max-width: 600px;">
+                    <h3>Cache verwalten</h3>
+                    <p class="text-muted" style="margin-bottom: 16px; font-size: 0.875rem;">
+                        Hier kannst du gespeicherte historische Daten (z.B. Top-Seller, Monatsdurchschnitte) löschen. Sie werden beim nächsten Aufruf neu berechnet.
+                    </p>
+                    <button type="button" id="cache-prune-btn" class="secondary-btn" style="color: var(--error-color); border-color: var(--error-color);">Cache leeren</button>
+                    <div id="cache-prune-msg" style="margin-top: 12px; font-size: 0.875rem; font-weight: 500;"></div>
                 </div>
             </div>
             

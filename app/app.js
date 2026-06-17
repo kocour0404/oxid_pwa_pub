@@ -17,6 +17,7 @@ const views = {
     settings: document.getElementById('settings-view'),
     orderSearch: document.getElementById('order-search-view'),
     stats: document.getElementById('stats-view'),
+    topseller: document.getElementById('topseller-view'),
     customerHistory: document.getElementById('customer-history-view')
 };
 
@@ -39,6 +40,7 @@ const tileOrders = document.getElementById('tile-orders');
 const tileSearch = document.getElementById('tile-search');
 const tileSettings = document.getElementById('tile-settings');
 const tileStats = document.getElementById('tile-stats');
+const tileTopseller = document.getElementById('tile-topseller');
 
 // Init
 function init() {
@@ -222,6 +224,75 @@ async function loadStats() {
     }
 }
 
+// Top Seller Logic
+let currentTsPeriod = 'month';
+
+async function loadTopSellers(period = 'month') {
+    currentTsPeriod = period;
+    
+    // Update active button
+    document.querySelectorAll('[id^="btn-ts-"]').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.getElementById(`btn-ts-${period}`);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    const errorEl = document.getElementById('topseller-error');
+    const loadingEl = document.getElementById('topseller-loading');
+    const listEl = document.getElementById('topseller-list');
+
+    errorEl.textContent = '';
+    loadingEl.style.display = 'block';
+    listEl.style.display = 'none';
+
+    try {
+        const data = await apiGet('stats.topseller', { period });
+        if (data.ok) {
+            renderTopSellers(data.articles, data.total_top10_qty);
+            loadingEl.style.display = 'none';
+            listEl.style.display = 'flex';
+        } else {
+            errorEl.textContent = 'Fehler: ' + data.error;
+            loadingEl.style.display = 'none';
+        }
+    } catch(e) {
+        errorEl.textContent = 'Netzwerkfehler beim Laden der Top Seller.';
+        loadingEl.style.display = 'none';
+    }
+}
+
+function renderTopSellers(articles, totalQty) {
+    const listEl = document.getElementById('topseller-list');
+    listEl.innerHTML = '';
+
+    if (!articles || articles.length === 0) {
+        listEl.innerHTML = '<p class="text-muted" style="padding: 16px;">Keine Artikel in diesem Zeitraum verkauft.</p>';
+        return;
+    }
+
+    articles.forEach((art, index) => {
+        const div = document.createElement('div');
+        div.className = 'order-item';
+        div.style.cursor = 'default';
+
+        const qty = Number(art.qty);
+        const revenue = Number(art.revenue).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+        const pct = totalQty > 0 ? (qty / totalQty) * 100 : 0;
+        
+        div.innerHTML = `
+            <div class="order-item-header">
+                <span>${index + 1}. ${art.name}</span>
+                <span>${qty}x</span>
+            </div>
+            <div class="order-item-meta" style="margin-bottom: 8px;">
+                Artikel-Nr: ${art.sku} &bull; Umsatz: ${revenue}
+            </div>
+            <div style="width: 100%; background: var(--border-color); height: 4px; border-radius: 2px; overflow: hidden;">
+                <div style="width: ${pct}%; background: var(--primary-color); height: 100%;"></div>
+            </div>
+        `;
+        listEl.appendChild(div);
+    });
+}
+
 // Orders
 const refreshOrdersBtn = document.getElementById('refresh-orders-btn');
 const ordersList = document.getElementById('orders-list');
@@ -249,6 +320,8 @@ const customerHistoryBackBtn = document.getElementById('customer-history-back-bt
 // Settings
 const settingsForm = document.getElementById('settings-form');
 const settingsMsg = document.getElementById('settings-msg');
+const cachePruneBtn = document.getElementById('cache-prune-btn');
+const cachePruneMsg = document.getElementById('cache-prune-msg');
 
 // API Helpers
 async function apiGet(op, params = {}) {
@@ -492,6 +565,9 @@ function switchView(viewId) {
     if (viewId === 'stats-view') {
         loadStats();
     }
+    if (viewId === 'topseller-view') {
+        loadTopSellers('month');
+    }
     if (viewId === 'order-search-view') {
         resetSearchView();
     }
@@ -649,6 +725,7 @@ tileOrders.addEventListener('click', () => switchView('orders-view'));
 tileSearch.addEventListener('click', () => switchView('order-search-view'));
 tileSettings.addEventListener('click', () => switchView('settings-view'));
 tileStats.addEventListener('click', () => switchView('stats-view'));
+tileTopseller.addEventListener('click', () => switchView('topseller-view'));
 
 // Event Listeners
 loginForm.addEventListener('submit', (e) => {
@@ -666,6 +743,32 @@ settingsForm.addEventListener('submit', (e) => {
     e.preventDefault();
     saveConfig();
 });
+
+if (cachePruneBtn) {
+    cachePruneBtn.addEventListener('click', async () => {
+        cachePruneMsg.textContent = 'Leere Cache...';
+        cachePruneMsg.style.color = 'var(--text-muted)';
+        try {
+            const data = await apiPost('cache.prune');
+            if (data.ok) {
+                cachePruneMsg.textContent = 'Cache erfolgreich geleert.';
+                cachePruneMsg.style.color = 'var(--success-color)';
+                setTimeout(() => cachePruneMsg.textContent = '', 3000);
+            } else {
+                cachePruneMsg.textContent = 'Fehler beim Leeren des Caches.';
+                cachePruneMsg.style.color = 'var(--error-color)';
+            }
+        } catch(e) {
+            cachePruneMsg.textContent = 'Netzwerkfehler.';
+            cachePruneMsg.style.color = 'var(--error-color)';
+        }
+    });
+}
+
+document.getElementById('btn-ts-month').addEventListener('click', () => loadTopSellers('month'));
+document.getElementById('btn-ts-year').addEventListener('click', () => loadTopSellers('year'));
+document.getElementById('btn-ts-prev_year').addEventListener('click', () => loadTopSellers('prev_year'));
+document.getElementById('btn-ts-all_time').addEventListener('click', () => loadTopSellers('all_time'));
 
 orderSearchForm.addEventListener('submit', (e) => {
     e.preventDefault();
