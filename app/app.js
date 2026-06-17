@@ -1,3 +1,14 @@
+// Security: HTML Escaping to prevent XSS
+function escapeHtml(unsafe) {
+    if (unsafe === null || unsafe === undefined) return '';
+    return String(unsafe)
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+}
+
 // State
 const state = {
     authenticated: false,
@@ -280,11 +291,11 @@ function renderTopSellers(articles, totalQty) {
         
         div.innerHTML = `
             <div class="order-item-header">
-                <span>${index + 1}. ${art.name}</span>
-                <span>${qty}x</span>
+                <span>${index + 1}. ${escapeHtml(art.name)}</span>
+                <span>${escapeHtml(qty)}x</span>
             </div>
             <div class="order-item-meta" style="margin-bottom: 8px;">
-                Artikel-Nr: ${art.sku} &bull; Einzelpreis (Ø): ${unitPrice} &bull; Kumulierter Umsatz: ${revenue}
+                Artikel-Nr: ${escapeHtml(art.sku)} &bull; Einzelpreis (Ø): ${unitPrice} &bull; Kumulierter Umsatz: ${revenue}
             </div>
             <div style="width: 100%; background: var(--border-color); height: 4px; border-radius: 2px; overflow: hidden;">
                 <div style="width: ${pct}%; background: var(--primary-color); height: 100%;"></div>
@@ -513,10 +524,13 @@ async function searchOrder(orderNr) {
             if (isShipped) badgesHtml += '<span class="badge badge-shipped">Versendet</span>';
             
             let html = badgesHtml ? `<p>${badgesHtml}</p>` : '';
-            const customerLink = order.user_id ? `<a href="#" onclick="loadCustomerHistory('${order.user_id}', '${order.customer}'); return false;">${order.customer}</a>` : order.customer;
-            html += `<p><strong>Kunde:</strong> ${customerLink} (Nr. ${order.customer_nr || '-'})</p>`;
-            html += `<p><strong>Datum:</strong> ${order.created_at}</p>`;
-            html += `<p><strong>Status:</strong> ${order.status}</p>`;
+            const safeCustomer = escapeHtml(order.customer);
+            const safeCustomerNr = escapeHtml(order.customer_nr || '-');
+            const safeUserId = escapeHtml(order.user_id);
+            const customerLink = order.user_id ? `<a href="#" data-userid="${safeUserId}" data-customer="${safeCustomer}" onclick="loadCustomerHistory(this.dataset.userid, this.dataset.customer); return false;">${safeCustomer}</a>` : safeCustomer;
+            html += `<p><strong>Kunde:</strong> ${customerLink} (Nr. ${safeCustomerNr})</p>`;
+            html += `<p><strong>Datum:</strong> ${escapeHtml(order.created_at)}</p>`;
+            html += `<p><strong>Status:</strong> ${escapeHtml(order.status)}</p>`;
             
             const total = Number(order.total).toFixed(2).replace('.', ',');
             const shipping = Number(order.shipping).toFixed(2).replace('.', ',');
@@ -526,8 +540,8 @@ async function searchOrder(orderNr) {
                 html += `<p><strong>Artikel:</strong></p><ul>`;
                 order.items.forEach(item => {
                     const p = Number(item.price).toFixed(2).replace('.', ',');
-                    const skuText = item.sku ? `[${item.sku}] ` : '';
-                    html += `<li>${item.qty}x ${skuText}${item.name} (${p} &euro;)</li>`;
+                    const skuText = item.sku ? `[${escapeHtml(item.sku)}] ` : '';
+                    html += `<li>${escapeHtml(item.qty)}x ${skuText}${escapeHtml(item.name)} (${p} &euro;)</li>`;
                 });
                 html += `</ul>`;
             }
@@ -618,12 +632,12 @@ function renderOrdersList(ordersArray, container, clickCallback, activeId = null
         
         div.innerHTML = `
             <div class="order-item-header">
-                <span>#${order.order_nr}</span>
+                <span>#${escapeHtml(order.order_nr)}</span>
                 <span>${price} &euro;</span>
             </div>
             ${badgesHtml ? `<div class="order-item-meta" style="margin-bottom: 4px;">${badgesHtml}</div>` : ''}
-            <div class="order-item-meta">${order.customer} (Kdnr: ${order.customer_nr || '-'})</div>
-            <div class="order-item-meta" style="font-size: 0.75rem; color: #999;">${order.created_at} &bull; Versand: ${shipping} &euro;</div>
+            <div class="order-item-meta">${escapeHtml(order.customer)} (Kdnr: ${escapeHtml(order.customer_nr || '-')})</div>
+            <div class="order-item-meta" style="font-size: 0.75rem; color: #999;">${escapeHtml(order.created_at)} &bull; Versand: ${shipping} &euro;</div>
         `;
         div.onclick = () => {
             container.querySelectorAll('.order-item').forEach(el => el.classList.remove('active'));
@@ -679,10 +693,13 @@ function renderOrderDetail() {
     if (isShipped) badgesHtml += '<span class="badge badge-shipped">Versendet</span>';
     
     let html = badgesHtml ? `<p>${badgesHtml}</p>` : '';
-    const customerLink = order.user_id ? `<a href="#" onclick="loadCustomerHistory('${order.user_id}', '${order.customer}'); return false;">${order.customer}</a>` : order.customer;
-    html += `<p><strong>Kunde:</strong> ${customerLink} (Kdnr: ${order.customer_nr || '-'})</p>`;
-    html += `<p><strong>Datum:</strong> ${order.created_at}</p>`;
-    html += `<p><strong>Status:</strong> ${order.status}</p>`;
+    const safeCustomer = escapeHtml(order.customer);
+    const safeCustomerNr = escapeHtml(order.customer_nr || '-');
+    const safeUserId = escapeHtml(order.user_id);
+    const customerLink = order.user_id ? `<a href="#" data-userid="${safeUserId}" data-customer="${safeCustomer}" onclick="loadCustomerHistory(this.dataset.userid, this.dataset.customer); return false;">${safeCustomer}</a>` : safeCustomer;
+    html += `<p><strong>Kunde:</strong> ${customerLink} (Kdnr: ${safeCustomerNr})</p>`;
+    html += `<p><strong>Datum:</strong> ${escapeHtml(order.created_at)}</p>`;
+    html += `<p><strong>Status:</strong> ${escapeHtml(order.status)}</p>`;
     
     const total = Number(order.total).toFixed(2).replace('.', ',');
     const shipping = Number(order.shipping).toFixed(2).replace('.', ',');
@@ -692,8 +709,8 @@ function renderOrderDetail() {
         html += `<p><strong>Artikel:</strong></p><ul>`;
         order.items.forEach(item => {
             const p = Number(item.price).toFixed(2).replace('.', ',');
-            const skuText = item.sku ? `[${item.sku}] ` : '';
-            html += `<li>${item.qty}x ${skuText}${item.name} (${p} &euro;)</li>`;
+            const skuText = item.sku ? `[${escapeHtml(item.sku)}] ` : '';
+            html += `<li>${escapeHtml(item.qty)}x ${skuText}${escapeHtml(item.name)} (${p} &euro;)</li>`;
         });
         html += `</ul>`;
     }
