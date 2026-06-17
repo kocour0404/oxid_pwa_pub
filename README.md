@@ -29,6 +29,7 @@ Das System basiert auf einer Dual-Database-Architektur, um maximale Sicherheit u
 5. **Bestellsuche:** Gezielte Suche nach einer OXID-Bestellnummer (`OXORDERNR`). (Geschützt gegen SQL-Injection durch sichere PDO Prepared Statements).
 6. **Bestell-Details:** Zeigt Kundeninformationen, Bestellsummen (inkl. Versand) und die gekauften Artikel an.
 7. **Statistiken:** Performantes, gecachtes Dashboard zur Auswertung der Netto-Umsätze (exkl. Versand/Storno). Bietet ein tagesaktuelles Balkendiagramm für den laufenden Monat inklusive gleitendem 30-Tage-Durchschnitt als Trendlinie, sowie ein interaktives Zero-Dependency Jahres-Balkendiagramm inkl. historischer Vergleichswerte.
+8. **Top Seller:** Auswertung der meistverkauften Artikel über verschiedene Zeiträume (Monat, Jahr, Vorjahr, All-time). Zeigt den durchschnittlichen Einzelpreis sowie den kumulierten Umsatz an. Historische Daten werden in der lokalen PWA-Datenbank zwischengespeichert und können über die Einstellungen verwaltet werden.
 
 ## Installationsprozess
 
