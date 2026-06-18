@@ -96,7 +96,8 @@ try {
         ['shop_db_host', 'localhost'],
         ['shop_db_user', 'root'],
         ['shop_db_pass', ''],
-        ['shop_db_name', 'mwm-test']
+        ['shop_db_name', 'mwm-test'],
+        ['shop_baselink', '']
     ];
 
     \$insertConfig = \$pdo->prepare("INSERT IGNORE INTO `oxidpwaconfig` (`config_key`, `config_value`) VALUES (?, ?)");

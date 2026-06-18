@@ -200,7 +200,7 @@ switch ($op) {
         $pdo = get_pdo();
         $stmt = $pdo->prepare("INSERT INTO oxidpwaconfig (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_value = ?");
         
-        $allowed_keys = ['shop_db_host', 'shop_db_user', 'shop_db_pass', 'shop_db_name', 'privacy_url'];
+        $allowed_keys = ['shop_db_host', 'shop_db_user', 'shop_db_pass', 'shop_db_name', 'privacy_url', 'shop_baselink'];
         foreach ($allowed_keys as $key) {
             if (isset($body[$key])) {
                 $val = $body[$key];

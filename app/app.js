@@ -482,6 +482,9 @@ async function loadConfig() {
             settingsForm.shop_db_user.value = conf.shop_db_user || '';
             settingsForm.shop_db_pass.value = conf.shop_db_pass || '';
             settingsForm.shop_db_name.value = conf.shop_db_name || '';
+            if (settingsForm.shop_baselink) {
+                settingsForm.shop_baselink.value = conf.shop_baselink || '';
+            }
             settingsForm.privacy_url.value = conf.privacy_url || '';
             settingsMsg.textContent = '';
         } else {
@@ -502,6 +505,7 @@ async function saveConfig() {
         shop_db_user: settingsForm.shop_db_user.value,
         shop_db_pass: settingsForm.shop_db_pass.value,
         shop_db_name: settingsForm.shop_db_name.value,
+        shop_baselink: settingsForm.shop_baselink ? settingsForm.shop_baselink.value : '',
         privacy_url: settingsForm.privacy_url.value
     };
     try {
