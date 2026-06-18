@@ -817,7 +817,8 @@ switch ($op) {
         $stmt->execute([$_SESSION['user']['id']]);
         $hash = $stmt->fetchColumn();
 
-        if (!password_verify($old_password, $hash)) {
+        $is_forced = !empty($_SESSION['user']['must_change_pwd']);
+        if (!$is_forced && !password_verify($old_password, $hash)) {
             json_response(['ok' => false, 'error' => 'invalid_old_password'], 400);
         }
 
