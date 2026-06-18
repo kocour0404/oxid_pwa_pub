@@ -480,6 +480,130 @@ switch ($op) {
             'cached' => false
         ]);
 
+    case 'articles.search':
+        require_method('POST');
+        require_auth();
+        require_csrf();
+        $body = read_json_body();
+        $term = $body['term'] ?? '';
+        
+        $oxid = get_oxid_pdo();
+        $likeTerm = '%' . $term . '%';
+        
+        // Find matching articles and determine their main IDs
+        $stmtSearch = $oxid->prepare("
+            SELECT DISTINCT IF(OXPARENTID != '', OXPARENTID, OXID) as main_id
+            FROM oxarticles
+            WHERE OXARTNUM LIKE ? OR OXTITLE LIKE ? OR OXEAN LIKE ?
+            LIMIT 50
+        ");
+        $stmtSearch->execute([$likeTerm, $likeTerm, $likeTerm]);
+        $mainIds = $stmtSearch->fetchAll(PDO::FETCH_COLUMN);
+        
+        if (empty($mainIds)) {
+            json_response(['ok' => true, 'results' => []]);
+        }
+        
+        // Fetch all related articles (the mains and all their variants)
+        $inQuery = implode(',', array_fill(0, count($mainIds), '?'));
+        // Prepare params for IN clause used twice (OXID IN ... OR OXPARENTID IN ...)
+        $params = array_merge($mainIds, $mainIds);
+        
+        $stmtArticles = $oxid->prepare("
+            SELECT OXID, OXPARENTID, OXARTNUM, OXTITLE, OXVARSELECT, OXPRICE, OXSTOCK, OXVARCOUNT, OXEAN
+            FROM oxarticles
+            WHERE OXID IN ($inQuery) OR OXPARENTID IN ($inQuery)
+            ORDER BY IF(OXPARENTID != '', OXPARENTID, OXID), OXPARENTID != '', OXARTNUM
+        ");
+        $stmtArticles->execute($params);
+        $articlesData = $stmtArticles->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Fetch categories for the main IDs
+        $stmtCat = $oxid->prepare("
+            SELECT o2c.OXOBJECTID, c.OXTITLE
+            FROM oxobject2category o2c
+            JOIN oxcategories c ON c.OXID = o2c.OXCATNID
+            WHERE c.OXACTIVE = 1 AND c.OXHIDDEN = 0 AND o2c.OXOBJECTID IN ($inQuery)
+            ORDER BY o2c.OXPOS
+        ");
+        $stmtCat->execute($mainIds);
+        $catData = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
+        
+        $categoriesMap = [];
+        foreach ($catData as $c) {
+            $categoriesMap[$c['OXOBJECTID']][] = $c['OXTITLE'];
+        }
+        
+        // Group the results
+        $groups = [];
+        foreach ($articlesData as $row) {
+            $mainId = empty($row['OXPARENTID']) ? $row['OXID'] : $row['OXPARENTID'];
+            if (!isset($groups[$mainId])) {
+                $groups[$mainId] = ['parent' => null, 'variants' => []];
+            }
+            if (empty($row['OXPARENTID'])) {
+                $groups[$mainId]['parent'] = $row;
+            } else {
+                $groups[$mainId]['variants'][] = $row;
+            }
+        }
+        
+        $results = [];
+        foreach ($groups as $mainId => $group) {
+            $parent = $group['parent'];
+            if (!$parent) continue; // Should not happen, but safe check
+            
+            $cats = $categoriesMap[$mainId] ?? [];
+            
+            if (empty($group['variants']) && $parent['OXVARCOUNT'] == 0) {
+                // Single article
+                $results[] = [
+                    'type' => 'single',
+                    'article' => [
+                        'id' => $parent['OXID'],
+                        'artnum' => $parent['OXARTNUM'],
+                        'title' => $parent['OXTITLE'],
+                        'price' => $parent['OXPRICE'],
+                        'stock' => $parent['OXSTOCK'],
+                        'ean' => $parent['OXEAN'],
+                        'categories' => $cats
+                    ]
+                ];
+            } else {
+                // Group article
+                $variantsList = [];
+                foreach ($group['variants'] as $v) {
+                    $variantsList[] = [
+                        'id' => $v['OXID'],
+                        'artnum' => $v['OXARTNUM'],
+                        'title' => $v['OXTITLE'],
+                        'varselect' => $v['OXVARSELECT'],
+                        'price' => $v['OXPRICE'],
+                        'stock' => $v['OXSTOCK'],
+                        'ean' => $v['OXEAN']
+                    ];
+                }
+                $results[] = [
+                    'type' => 'group',
+                    'parent' => [
+                        'id' => $parent['OXID'],
+                        'artnum' => $parent['OXARTNUM'],
+                        'title' => $parent['OXTITLE'],
+                        'ean' => $parent['OXEAN'],
+                        'categories' => $cats
+                    ],
+                    'variants' => $variantsList
+                ];
+            }
+        }
+        
+        $pdo = get_pdo();
+        $stmtConf = $pdo->query("SELECT config_value FROM oxidpwaconfig WHERE config_key = 'shop_baselink'");
+        $baselink = $stmtConf->fetchColumn();
+        if (!$baselink) $baselink = '';
+        
+        json_response(['ok' => true, 'results' => $results, 'baselink' => $baselink]);
+
     case 'orders.new':
         require_method('GET');
         require_auth();

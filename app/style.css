@@ -586,3 +586,29 @@ body {
         font-size: 0.8rem;
     }
 }
+
+/* Variant Table */
+.variant-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+.variant-table th, .variant-table td {
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+.variant-table th {
+    background-color: var(--surface-color);
+    color: var(--text-muted);
+    font-weight: 500;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.variant-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.variant-table tbody tr:hover {
+    background-color: var(--hover-color);
+}

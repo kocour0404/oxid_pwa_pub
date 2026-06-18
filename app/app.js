@@ -29,6 +29,7 @@ const views = {
     orders: document.getElementById('orders-view'),
     settings: document.getElementById('settings-view'),
     orderSearch: document.getElementById('order-search-view'),
+    articleSearch: document.getElementById('article-search-view'),
     stats: document.getElementById('stats-view'),
     topseller: document.getElementById('topseller-view'),
     customerHistory: document.getElementById('customer-history-view'),
@@ -55,6 +56,7 @@ const logoutBtn = document.getElementById('logout-btn');
 // Dashboard
 const tileOrders = document.getElementById('tile-orders');
 const tileSearch = document.getElementById('tile-search');
+const tileArticleSearch = document.getElementById('tile-article-search');
 const tileSettings = document.getElementById('tile-settings');
 const tileStats = document.getElementById('tile-stats');
 const tileTopseller = document.getElementById('tile-topseller');
@@ -322,6 +324,8 @@ const errorMessage = document.getElementById('error-message');
 
 // Order Search
 const orderSearchForm = document.getElementById('order-search-form');
+const articleSearchForm = document.getElementById('article-search-form');
+const articleSearchResults = document.getElementById('article-search-results');
 const searchError = document.getElementById('search-error');
 const searchResultContainer = document.getElementById('search-result-container');
 const searchDetailTitle = document.getElementById('search-detail-title');
@@ -632,6 +636,9 @@ function switchView(viewId) {
     if (viewId === 'order-search-view') {
         resetSearchView();
     }
+    if (viewId === 'article-search-view') {
+        resetArticleSearchView();
+    }
     if (viewId === 'customers-view') {
         resetCustomersView();
     }
@@ -645,6 +652,11 @@ function resetSearchView() {
     searchResultContainer.style.display = 'none';
     dateSearchResults.style.display = 'none';
     dateSearchResults.innerHTML = '';
+}
+
+function resetArticleSearchView() {
+    if (articleSearchForm) articleSearchForm.reset();
+    if (articleSearchResults) articleSearchResults.innerHTML = '';
 }
 
 function renderOrders() {
@@ -812,6 +824,9 @@ tileOrders.addEventListener('keydown', (e) => handleTileClick(e, 'orders-view'))
 tileSearch.addEventListener('click', (e) => handleTileClick(e, 'order-search-view'));
 tileSearch.addEventListener('keydown', (e) => handleTileClick(e, 'order-search-view'));
 
+tileArticleSearch.addEventListener('click', (e) => handleTileClick(e, 'article-search-view'));
+tileArticleSearch.addEventListener('keydown', (e) => handleTileClick(e, 'article-search-view'));
+
 tileSettings.addEventListener('click', (e) => handleTileClick(e, 'settings-view'));
 tileSettings.addEventListener('keydown', (e) => handleTileClick(e, 'settings-view'));
 
@@ -832,6 +847,14 @@ loginForm.addEventListener('submit', (e) => {
     const username = loginForm.username.value;
     const password = loginForm.password.value;
     login(username, password);
+});
+
+articleSearchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const term = document.getElementById('search-article-term').value.trim();
+    if (term) {
+        searchArticles(term);
+    }
 });
 
 logoutBtn.addEventListener('click', logout);
@@ -905,6 +928,102 @@ dateSearchForm.addEventListener('submit', async (e) => {
 customerHistoryBackBtn.addEventListener('click', () => {
     switchView('order-search-view');
 });
+
+async function searchArticles(term) {
+    articleSearchResults.innerHTML = '<div class="spinner"></div>';
+    
+    try {
+        const data = await apiPost('articles.search', { term: term });
+        if (data.ok && data.results) {
+            renderArticleResults(data.results, data.baselink || '');
+        } else {
+            articleSearchResults.innerHTML = `<div class="error-msg">${escapeHtml(data.error || 'Fehler bei der Suche.')}</div>`;
+        }
+    } catch (e) {
+        articleSearchResults.innerHTML = '<div class="error-msg">Netzwerkfehler.</div>';
+    }
+}
+
+function renderArticleResults(results, baselink) {
+    if (results.length === 0) {
+        articleSearchResults.innerHTML = '<p>Keine Artikel gefunden.</p>';
+        return;
+    }
+    
+    let html = '';
+    results.forEach(res => {
+        if (res.type === 'single') {
+            const a = res.article;
+            const price = Number(a.price).toFixed(2).replace('.', ',');
+            const stockClass = a.stock > 0 ? 'badge-paid' : 'badge-storno';
+            const categories = a.categories && a.categories.length > 0 ? `<div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">Kategorien: ${escapeHtml(a.categories.join(', '))}</div>` : '';
+            const titleLink = baselink ? `<a href="${baselink}index.php?cl=details&anid=${a.id}" target="_blank" style="text-decoration: underline;">${escapeHtml(a.title)}</a>` : escapeHtml(a.title);
+            html += `
+                <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 4px;">${titleLink}</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 4px;">ArtNr: ${escapeHtml(a.artnum)}${a.ean ? ' | EAN: ' + escapeHtml(a.ean) : ''}</div>
+                        ${categories}
+                        <div><span class="badge ${stockClass}">Bestand: ${escapeHtml(a.stock)}</span></div>
+                    </div>
+                    <div style="font-weight: bold; font-size: 1.1rem;">
+                        ${price} &euro;
+                    </div>
+                </div>
+            `;
+        } else if (res.type === 'group') {
+            const p = res.parent;
+            const categories = p.categories && p.categories.length > 0 ? `<div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">Kategorien: ${escapeHtml(p.categories.join(', '))}</div>` : '';
+            const pTitleLink = baselink ? `<a href="${baselink}index.php?cl=details&anid=${p.id}" target="_blank" style="text-decoration: underline;">${escapeHtml(p.title)}</a>` : escapeHtml(p.title);
+            let variantsHtml = '';
+            res.variants.forEach(v => {
+                const vPrice = Number(v.price).toFixed(2).replace('.', ',');
+                const vStockClass = v.stock > 0 ? 'badge-paid' : 'badge-storno';
+                const vArtNum = v.artnum || p.artnum;
+                const vTitleText = escapeHtml(v.varselect || v.title);
+                const vTitleLink = baselink ? `<a href="${baselink}index.php?cl=details&anid=${v.id}" target="_blank" style="text-decoration: underline; color: inherit;">${vTitleText}</a>` : vTitleText;
+                variantsHtml += `
+                    <tr>
+                        <td>
+                            <div>${escapeHtml(vArtNum)}</div>
+                            ${v.ean ? `<div style="font-size: 0.8rem; color: var(--text-secondary);">EAN: ${escapeHtml(v.ean)}</div>` : ''}
+                        </td>
+                        <td>${vTitleLink}</td>
+                        <td>${vPrice} &euro;</td>
+                        <td><span class="badge ${vStockClass}">${escapeHtml(v.stock)}</span></td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                <div class="card" style="padding-bottom: 0;">
+                    <div style="margin-bottom: 12px;">
+                        <div style="font-weight: 600; margin-bottom: 4px;">${pTitleLink} (Hauptartikel)</div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 4px;">ArtNr: ${escapeHtml(p.artnum)}${p.ean ? ' | EAN: ' + escapeHtml(p.ean) : ''}</div>
+                        ${categories}
+                    </div>
+                    <div style="overflow-x: auto; margin: 0 -20px;">
+                        <table class="variant-table" style="width: 100%; border-collapse: collapse; min-width: 400px;">
+                            <thead>
+                                <tr>
+                                    <th>ArtNr</th>
+                                    <th>Variante</th>
+                                    <th>Preis</th>
+                                    <th>Bestand</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${variantsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+    });
+    
+    articleSearchResults.innerHTML = html;
+}
 
 async function loadCustomerHistory(userId, customerName) {
     switchView('customer-history-view');
