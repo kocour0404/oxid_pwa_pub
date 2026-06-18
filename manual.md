@@ -7,12 +7,15 @@ Willkommen beim Benutzerhandbuch für die **Order PWA** (Progressive Web App) f�
 ## Inhaltsverzeichnis
 1. [Voraussetzungen und Login](#1-voraussetzungen-und-login)
 2. [Das Dashboard](#2-das-dashboard)
-3. [Kunden suchen und verwalten](#3-kunden-suchen-und-verwalten)
-4. [Neue Bestellungen](#4-neue-bestellungen)
-5. [Bestellung suchen](#5-bestellung-suchen)
-6. [Statistiken](#6-statistiken)
-7. [Top Seller](#7-top-seller)
-8. [Einstellungen & Cache](#8-einstellungen--cache)
+3. [Profil & Passwort ändern](#3-profil--passwort-ändern)
+4. [Kunden suchen und verwalten](#4-kunden-suchen-und-verwalten)
+5. [Neue Bestellungen](#5-neue-bestellungen)
+6. [Bestellung suchen](#6-bestellung-suchen)
+7. [Artikel suchen](#7-artikel-suchen)
+8. [Statistiken](#8-statistiken)
+9. [Top Seller](#9-top-seller)
+10. [Benutzerverwaltung (Admin)](#10-benutzerverwaltung-admin)
+11. [Einstellungen & Cache](#11-einstellungen--cache)
 
 ---
 
@@ -38,15 +41,26 @@ Hier findest du verschiedene **Kacheln** für den Schnellzugriff auf alle Funkti
 *   **Kunden:** Kunden suchen und verwalten
 *   **Neue Bestellungen:** Die aktuellsten Bestellungen ansehen
 *   **Bestellung suchen:** Gezielt nach bestimmten Käufen suchen
+*   **Artikel suchen:** Shop-Artikel inklusive Varianten durchsuchen
 *   **Statistiken:** Umsätze und Auswertungen prüfen
 *   **Top Seller:** Die bestverkauften Artikel analysieren
-*   **Einstellungen:** Datenbankverbindungen verwalten
+*   **Benutzer (Admin):** Weitere App-Nutzer anlegen (nur für Haupt-Admins sichtbar)
+*   **Einstellungen (Admin):** Datenbankverbindungen verwalten (nur für Haupt-Admins sichtbar)
 
 Alternativ kannst du jederzeit über das **Burger-Menü** (die drei Striche oben rechts) auf alle diese Punkte zugreifen.
 
 ---
 
-## 3. Kunden suchen und verwalten
+## 3. Profil & Passwort ändern
+
+Sobald du angemeldet bist, findest du oben rechts ein **Profil-Icon** (neben dem Logout-Button). 
+
+*   Ein Klick darauf öffnet ein Menü, in dem du dein Passwort ändern kannst. 
+*   **Wichtig:** Falls ein Administrator dein Passwort zurückgesetzt hat, wirst du nach dem nächsten Login **zwingend** aufgefordert, ein neues, sicheres Passwort zu vergeben, bevor du auf das Dashboard zugreifen kannst.
+
+---
+
+## 4. Kunden suchen und verwalten
 
 Über diesen Menüpunkt kannst du den Kundenstamm deines OXID eShops durchsuchen.
 
@@ -56,7 +70,7 @@ Alternativ kannst du jederzeit über das **Burger-Menü** (die drei Striche oben
 
 ---
 
-## 4. Neue Bestellungen
+## 5. Neue Bestellungen
 
 Dieser Bereich gibt dir einen schnellen Überblick über das aktuelle Tagesgeschäft.
 
@@ -70,7 +84,7 @@ Dieser Bereich gibt dir einen schnellen Überblick über das aktuelle Tagesgesch
 
 ---
 
-## 5. Bestellung suchen
+## 6. Bestellung suchen
 
 Wenn du eine spezifische Bestellung suchst, bist du hier richtig. Dir stehen zwei Suchmethoden zur Verfügung:
 
@@ -79,7 +93,18 @@ Wenn du eine spezifische Bestellung suchst, bist du hier richtig. Dir stehen zwe
 
 ---
 
-## 6. Statistiken
+## 7. Artikel suchen
+
+Mit der Artikelsuche kannst du blitzschnell den aktuellen Bestand und die Preise deines Shops prüfen.
+
+*   **Suchfelder:** Du kannst nach einem Begriff im Titel, nach der **Artikelnummer (ArtNr)** oder direkt nach der **EAN** suchen.
+*   **Darstellung:** Das System unterscheidet automatisch zwischen normalen Einzelartikeln und Artikeln mit Varianten (sog. Hauptartikel). 
+*   **Varianten-Ansicht:** Hat ein Artikel Varianten (z.B. verschiedene Größen/Farben), wird der Hauptartikel als Kopf angezeigt und darunter eine übersichtliche Tabelle aller dazugehörigen Varianten inkl. Preis und Bestand.
+*   **Preview-Link:** Wenn du auf den Titel eines Artikels (oder einer Variante) klickst, öffnet sich (sofern in den Einstellungen konfiguriert) direkt die Produktdetailseite deines eShops in einem neuen Tab.
+
+---
+
+## 8. Statistiken
 
 Das Statistik-Dashboard bietet dir auf einen Blick eine Auswertung deiner Netto-Umsätze (exklusive Versandkosten und exklusive stornierter Bestellungen).
 
@@ -88,7 +113,7 @@ Das Statistik-Dashboard bietet dir auf einen Blick eine Auswertung deiner Netto-
 
 ---
 
-## 7. Top Seller
+## 9. Top Seller
 
 Welche Produkte laufen am besten? Dieser Bereich listet dir deine Top 10 Bestseller auf.
 
@@ -102,11 +127,23 @@ Für jeden Artikel in der Liste siehst du die verkaufte Menge, den durchschnittl
 
 ---
 
-## 8. Einstellungen & Cache
+## 10. Benutzerverwaltung (Admin)
+
+Dieser Bereich ist **nur für den Haupt-Administrator** sichtbar.
+
+Hier können weitere Benutzer-Accounts für Mitarbeiter angelegt werden. 
+*   Jeder Mitarbeiter bekommt einen eigenen Benutzernamen und ein von dir vergebenes Start-Passwort.
+*   Du kannst Accounts jederzeit wieder löschen oder ein "Passwort-Reset" erzwingen. Dies sperrt das alte Passwort und zwingt den Mitarbeiter, sich beim nächsten Login sofort ein eigenes, neues Passwort zu vergeben.
+*   Normale Mitarbeiter haben keinen Zugriff auf die Benutzerverwaltung und können die Datenbank-Einstellungen nicht ändern.
+
+---
+
+## 11. Einstellungen & Cache
 
 In den Einstellungen nimmst du technische Konfigurationen vor und verwaltest die App.
 
 *   **OXID Datenbankverbindung:** Wenn du die App zum ersten Mal nutzt, musst du hier die Zugangsdaten deiner OXID Shop-Datenbank (Host, Benutzer, Passwort, Datenbankname) eintragen. Die App baut daraufhin eine sichere Nur-Lese-Verbindung zu deinem Shop auf.
+*   **Shop-Baselink:** Trage hier die Haupt-URL deines Shops ein (z.B. `https://mein-shop.de/`). Dieser Link wird genutzt, um dir z.B. bei der Artikelsuche einen direkten Preview-Link zum Frontend generieren zu können.
 *   **Datenschutzerklärung:** Hier kannst du den Link zu deiner Datenschutzerklärung hinterlegen, der dann im Footer der App angezeigt wird.
 *   **Cache verwalten:** Die App speichert historische, berechnungsintensive Daten (wie z.B. Top-Seller oder Vorjahresdurchschnitte) lokal zwischen, um extrem schnell zu laden. Über den Button **"Cache leeren"** kannst du diese Zwischenspeicher bei Bedarf löschen. Sie werden dann beim nächsten Aufruf der Statistiken frisch aus der Shop-Datenbank berechnet.
 

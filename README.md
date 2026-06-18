@@ -7,8 +7,8 @@ Ziel dieser PWA ist es, Shop-Betreibern eine schnelle, sichere und für mobile E
 
 ## Architektur
 Das System basiert auf einer Dual-Database-Architektur, um maximale Sicherheit und Unabhängigkeit zu gewährleisten:
-1. **PWA Datenbank (`oxidpwa`)**: Hier liegen die Zugangsdaten der App-Nutzer (Passwort-Hashes) und die Konfiguration, wie die App sich mit der Shop-Datenbank verbinden soll.
-2. **Shop Datenbank (`mwm-test` o.ä.)**: Die reguläre OXID Datenbank. Aus dieser werden die Bestelldaten (`oxorder`, `oxorderarticles`, `oxuser`) nur **lesend** abgerufen.
+1. **PWA Datenbank (`oxidpwa`)**: Hier liegen die Zugangsdaten der App-Nutzer (Multi-User, Passwort-Hashes) und die Konfiguration, wie die App sich mit der Shop-Datenbank verbinden soll.
+2. **Shop Datenbank (`mwm-test` o.ä.)**: Die reguläre OXID Datenbank. Aus dieser werden die Bestelldaten (`oxorder`, `oxorderarticles`, `oxuser`), sowie Artikel (`oxarticles`) nur **lesend** abgerufen.
 
 **Technologie-Stack:**
 *   **Backend:** Leichtgewichtiges PHP (`api/api.php`) mit PDO für sichere, Prepared SQL-Statements.
@@ -24,13 +24,15 @@ Das System basiert auf einer Dual-Database-Architektur, um maximale Sicherheit u
 ## Funktions-Walkthrough
 1. **Login:** Sichere Anmeldemaske (Nutzer wird individuell beim Installieren generiert).
 2. **Dashboard:** Kachel-Übersicht für Navigation.
-3. **Einstellungen:** Konfiguration der Shop-Datenbank-Verbindung (Host, User, PW, DB-Name).
+3. **Einstellungen:** Konfiguration der Shop-Datenbank-Verbindung (Host, User, PW, DB-Name) und des **Shop-Baselinks** (für Artikel-Vorschauen).
+4. **Benutzerverwaltung (Admin-only):** Mehrbenutzersystem mit Haupt-Admin. Erstellen, Löschen und Verwalten von App-Nutzern inkl. erzwungenem Passwort-Reset.
 4. **Kunden:** Performante Suche im OXID-Kundenstamm (Name, Firma, Username, Kdnr.). Enthält eine Detailansicht der Kundendaten sowie die Möglichkeit, direkt die komplette Bestellhistorie eines Nutzers aufzurufen.
 5. **Bestellungen (Neu):** Paginierte Liste der neuesten Bestellungen inkl. Status-Badges (Bezahlt, Storno, Versendet) und Ladefunktion (10 pro Seite).
 6. **Bestellsuche:** Gezielte Suche nach einer OXID-Bestellnummer (`OXORDERNR`). (Geschützt gegen SQL-Injection durch sichere PDO Prepared Statements).
 7. **Bestell-Details:** Zeigt Kundeninformationen, Bestellsummen (inkl. Versand) und die gekauften Artikel an.
-8. **Statistiken:** Performantes, gecachtes Dashboard zur Auswertung der Netto-Umsätze (exkl. Versand/Storno). Bietet ein tagesaktuelles Balkendiagramm für den laufenden Monat inklusive gleitendem 30-Tage-Durchschnitt als Trendlinie, sowie ein interaktives Zero-Dependency Jahres-Balkendiagramm inkl. historischer Vergleichswerte.
-9. **Top Seller:** Auswertung der meistverkauften Artikel über verschiedene Zeiträume (Monat, Jahr, Vorjahr, All-time). Zeigt den durchschnittlichen Einzelpreis sowie den kumulierten Umsatz an. Historische Daten werden in der lokalen PWA-Datenbank zwischengespeichert und können über die Einstellungen verwaltet werden.
+8. **Artikelsuche:** Durchsuchen des Artikelstamms nach Titel, Artikelnummer (ArtNr) oder EAN. Übersichtliche Darstellung von Hauptartikeln und deren Varianten inkl. Bestand, Preis, Kategorien und direktem Preview-Link in den Shop.
+9. **Statistiken:** Performantes, gecachtes Dashboard zur Auswertung der Netto-Umsätze (exkl. Versand/Storno). Bietet ein tagesaktuelles Balkendiagramm für den laufenden Monat inklusive gleitendem 30-Tage-Durchschnitt als Trendlinie, sowie ein interaktives Zero-Dependency Jahres-Balkendiagramm inkl. historischer Vergleichswerte.
+10. **Top Seller:** Auswertung der meistverkauften Artikel über verschiedene Zeiträume (Monat, Jahr, Vorjahr, All-time). Zeigt den durchschnittlichen Einzelpreis sowie den kumulierten Umsatz an. Historische Daten werden in der lokalen PWA-Datenbank zwischengespeichert und können über die Einstellungen verwaltet werden.
 
 ## Installationsprozess
 
