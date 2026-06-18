@@ -956,25 +956,25 @@ function renderArticleResults(results, baselink) {
             const a = res.article;
             const price = Number(a.price).toFixed(2).replace('.', ',');
             const stockClass = a.stock > 0 ? 'badge-paid' : 'badge-storno';
-            const categories = a.categories && a.categories.length > 0 ? `<div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">Kategorien: ${escapeHtml(a.categories.join(', '))}</div>` : '';
-            const titleLink = baselink ? `<a href="${baselink}index.php?cl=details&anid=${a.id}" target="_blank" style="text-decoration: underline;">${escapeHtml(a.title)}</a>` : escapeHtml(a.title);
+            const categories = a.categories && a.categories.length > 0 ? `<div class="order-item-meta" style="font-size: 0.75rem; color: #999; margin-top: 4px;">Kategorien: ${escapeHtml(a.categories.join(', '))}</div>` : '';
+            const titleLink = baselink ? `<a href="${baselink}index.php?cl=details&anid=${a.id}" target="_blank" style="text-decoration: underline; color: inherit;">${escapeHtml(a.title)}</a>` : escapeHtml(a.title);
             html += `
-                <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 4px;">${titleLink}</div>
-                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 4px;">ArtNr: ${escapeHtml(a.artnum)}${a.ean ? ' | EAN: ' + escapeHtml(a.ean) : ''}</div>
-                        ${categories}
-                        <div><span class="badge ${stockClass}">Bestand: ${escapeHtml(a.stock)}</span></div>
+                <div class="order-item no-hover">
+                    <div class="order-item-header">
+                        <span>${titleLink}</span>
+                        <span>${price} &euro;</span>
                     </div>
-                    <div style="font-weight: bold; font-size: 1.1rem;">
-                        ${price} &euro;
+                    <div class="order-item-meta" style="margin-bottom: 4px;">
+                        <span class="badge ${stockClass}">Bestand: ${escapeHtml(a.stock)}</span>
                     </div>
+                    <div class="order-item-meta">ArtNr: ${escapeHtml(a.artnum)}${a.ean ? ' | EAN: ' + escapeHtml(a.ean) : ''}</div>
+                    ${categories}
                 </div>
             `;
         } else if (res.type === 'group') {
             const p = res.parent;
-            const categories = p.categories && p.categories.length > 0 ? `<div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 8px;">Kategorien: ${escapeHtml(p.categories.join(', '))}</div>` : '';
-            const pTitleLink = baselink ? `<a href="${baselink}index.php?cl=details&anid=${p.id}" target="_blank" style="text-decoration: underline;">${escapeHtml(p.title)}</a>` : escapeHtml(p.title);
+            const categories = p.categories && p.categories.length > 0 ? `<div class="order-item-meta" style="font-size: 0.75rem; color: #999; margin-top: 4px;">Kategorien: ${escapeHtml(p.categories.join(', '))}</div>` : '';
+            const pTitleLink = baselink ? `<a href="${baselink}index.php?cl=details&anid=${p.id}" target="_blank" style="text-decoration: underline; color: inherit;">${escapeHtml(p.title)}</a>` : escapeHtml(p.title);
             let variantsHtml = '';
             res.variants.forEach(v => {
                 const vPrice = Number(v.price).toFixed(2).replace('.', ',');
@@ -986,7 +986,7 @@ function renderArticleResults(results, baselink) {
                     <tr>
                         <td>
                             <div>${escapeHtml(vArtNum)}</div>
-                            ${v.ean ? `<div style="font-size: 0.8rem; color: var(--text-secondary);">EAN: ${escapeHtml(v.ean)}</div>` : ''}
+                            ${v.ean ? `<div style="font-size: 0.8rem; color: #999;">EAN: ${escapeHtml(v.ean)}</div>` : ''}
                         </td>
                         <td>${vTitleLink}</td>
                         <td>${vPrice} &euro;</td>
@@ -996,13 +996,15 @@ function renderArticleResults(results, baselink) {
             });
             
             html += `
-                <div class="card" style="padding-bottom: 0;">
-                    <div style="margin-bottom: 12px;">
-                        <div style="font-weight: 600; margin-bottom: 4px;">${pTitleLink} (Hauptartikel)</div>
-                        <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 4px;">ArtNr: ${escapeHtml(p.artnum)}${p.ean ? ' | EAN: ' + escapeHtml(p.ean) : ''}</div>
-                        ${categories}
+                <div class="order-item no-hover" style="padding-bottom: 0;">
+                    <div class="order-item-header">
+                        <span>${pTitleLink} (Hauptartikel)</span>
                     </div>
-                    <div style="overflow-x: auto; margin: 0 -20px;">
+                    <div class="order-item-meta" style="margin-bottom: 12px;">
+                        ArtNr: ${escapeHtml(p.artnum)}${p.ean ? ' | EAN: ' + escapeHtml(p.ean) : ''}
+                    </div>
+                    ${categories}
+                    <div style="overflow-x: auto; margin: 12px -16px 0 -16px;">
                         <table class="variant-table" style="width: 100%; border-collapse: collapse; min-width: 400px;">
                             <thead>
                                 <tr>

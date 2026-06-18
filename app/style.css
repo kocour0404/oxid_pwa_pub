@@ -345,6 +345,13 @@ body {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 1px var(--primary-color);
 }
+.order-item.no-hover {
+    cursor: default;
+}
+.order-item.no-hover:hover {
+    border-color: var(--border-color);
+    box-shadow: none;
+}
 .order-item-header {
     display: flex;
     justify-content: space-between;
