@@ -51,6 +51,13 @@ function require_auth(): void {
     }
 }
 
+function require_main_admin(): void {
+    require_auth();
+    if (empty($_SESSION['user']['is_main_admin'])) {
+        json_response(['ok' => false, 'error' => 'forbidden'], 403);
+    }
+}
+
 function require_csrf(): void {
     $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
     if (empty($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $token)) {
@@ -134,13 +141,21 @@ switch ($op) {
         $password = $body['password'] ?? '';
         
         $pdo = get_pdo();
-        $stmt = $pdo->prepare("SELECT username, password_hash FROM oxidpwauser WHERE username = ?");
+        $stmt = $pdo->prepare("SELECT id, username, password_hash, is_main_admin, is_active, must_change_pwd FROM oxidpwauser WHERE username = ?");
         $stmt->execute([$username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($password, $user['password_hash'])) {
+            if (!$user['is_active']) {
+                json_response(['ok' => false, 'error' => 'account_disabled'], 403);
+            }
             $_SESSION['authenticated'] = true;
-            $_SESSION['user'] = ['name' => $user['username']];
+            $_SESSION['user'] = [
+                'id' => $user['id'],
+                'name' => $user['username'],
+                'is_main_admin' => (bool)$user['is_main_admin'],
+                'must_change_pwd' => (bool)$user['must_change_pwd']
+            ];
             session_regenerate_id(true);
             json_response([
                 'ok' => true,
@@ -153,6 +168,21 @@ switch ($op) {
     case 'session':
         require_method('GET');
         if (!empty($_SESSION['authenticated'])) {
+            // refresh must_change_pwd status from DB
+            $pdo = get_pdo();
+            $stmt = $pdo->prepare("SELECT is_main_admin, is_active, must_change_pwd FROM oxidpwauser WHERE id = ?");
+            $stmt->execute([$_SESSION['user']['id']]);
+            $dbUser = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$dbUser || !$dbUser['is_active']) {
+                session_unset();
+                session_destroy();
+                json_response(['ok' => false, 'authenticated' => false]);
+            }
+            
+            $_SESSION['user']['is_main_admin'] = (bool)$dbUser['is_main_admin'];
+            $_SESSION['user']['must_change_pwd'] = (bool)$dbUser['must_change_pwd'];
+
             json_response([
                 'ok' => true,
                 'authenticated' => true,
@@ -179,7 +209,7 @@ switch ($op) {
 
     case 'config.get':
         require_method('GET');
-        require_auth();
+        require_main_admin();
         $pdo = get_pdo();
         $stmt = $pdo->query("SELECT config_key, config_value FROM oxidpwaconfig");
         $config = [];
@@ -194,7 +224,7 @@ switch ($op) {
 
     case 'config.set':
         require_method('POST');
-        require_auth();
+        require_main_admin();
         require_csrf();
         $body = read_json_body();
         $pdo = get_pdo();
@@ -687,6 +717,117 @@ switch ($op) {
         }
 
         json_response(['ok' => true, 'customers' => $customers]);
+
+    case 'users.list':
+        require_method('GET');
+        require_main_admin();
+        $pdo = get_pdo();
+        $stmt = $pdo->query("SELECT id, username, is_main_admin, is_active, must_change_pwd, created_at FROM oxidpwauser ORDER BY id ASC");
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Cast to appropriate types
+        foreach ($users as &$u) {
+            $u['is_main_admin'] = (bool)$u['is_main_admin'];
+            $u['is_active'] = (bool)$u['is_active'];
+            $u['must_change_pwd'] = (bool)$u['must_change_pwd'];
+        }
+        json_response(['ok' => true, 'users' => $users]);
+
+    case 'user.create':
+        require_method('POST');
+        require_main_admin();
+        require_csrf();
+        $body = read_json_body();
+        $username = trim($body['username'] ?? '');
+        $password = $body['password'] ?? '';
+
+        if (empty($username) || empty($password)) {
+            json_response(['ok' => false, 'error' => 'missing_fields'], 400);
+        }
+
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM oxidpwauser WHERE username = ?");
+        $stmt->execute([$username]);
+        if ($stmt->fetchColumn() > 0) {
+            json_response(['ok' => false, 'error' => 'username_exists'], 400);
+        }
+
+        $hash = password_hash($password, PASSWORD_DEFAULT);
+        $stmt = $pdo->prepare("INSERT INTO oxidpwauser (username, password_hash, is_main_admin, is_active, must_change_pwd) VALUES (?, ?, 0, 1, 1)");
+        $stmt->execute([$username, $hash]);
+        json_response(['ok' => true, 'id' => $pdo->lastInsertId()]);
+
+    case 'user.toggle_status':
+        require_method('POST');
+        require_main_admin();
+        require_csrf();
+        $body = read_json_body();
+        $id = $body['id'] ?? 0;
+
+        if ($id == $_SESSION['user']['id']) {
+            json_response(['ok' => false, 'error' => 'cannot_toggle_self'], 400);
+        }
+
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare("UPDATE oxidpwauser SET is_active = NOT is_active WHERE id = ? AND is_main_admin = 0");
+        $stmt->execute([$id]);
+        json_response(['ok' => true]);
+
+    case 'user.delete':
+        require_method('POST');
+        require_main_admin();
+        require_csrf();
+        $body = read_json_body();
+        $id = $body['id'] ?? 0;
+
+        if ($id == $_SESSION['user']['id']) {
+            json_response(['ok' => false, 'error' => 'cannot_delete_self'], 400);
+        }
+
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare("DELETE FROM oxidpwauser WHERE id = ? AND is_main_admin = 0");
+        $stmt->execute([$id]);
+        json_response(['ok' => true]);
+
+    case 'user.force_password_change':
+        require_method('POST');
+        require_main_admin();
+        require_csrf();
+        $body = read_json_body();
+        $id = $body['id'] ?? 0;
+
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare("UPDATE oxidpwauser SET must_change_pwd = 1 WHERE id = ?");
+        $stmt->execute([$id]);
+        json_response(['ok' => true]);
+
+    case 'user.change_password':
+        require_method('POST');
+        require_auth();
+        require_csrf();
+        $body = read_json_body();
+        $old_password = $body['old_password'] ?? '';
+        $new_password = $body['new_password'] ?? '';
+
+        if (empty($new_password)) {
+            json_response(['ok' => false, 'error' => 'missing_new_password'], 400);
+        }
+
+        $pdo = get_pdo();
+        $stmt = $pdo->prepare("SELECT password_hash FROM oxidpwauser WHERE id = ?");
+        $stmt->execute([$_SESSION['user']['id']]);
+        $hash = $stmt->fetchColumn();
+
+        if (!password_verify($old_password, $hash)) {
+            json_response(['ok' => false, 'error' => 'invalid_old_password'], 400);
+        }
+
+        $new_hash = password_hash($new_password, PASSWORD_DEFAULT);
+        $stmt = $pdo->prepare("UPDATE oxidpwauser SET password_hash = ?, must_change_pwd = 0 WHERE id = ?");
+        $stmt->execute([$new_hash, $_SESSION['user']['id']]);
+        
+        $_SESSION['user']['must_change_pwd'] = false;
+
+        json_response(['ok' => true]);
 
     default:
         json_response(['ok' => false, 'error' => 'unknown_operation'], 404);

@@ -69,6 +69,9 @@ try {
         `id` INT AUTO_INCREMENT PRIMARY KEY,
         `username` VARCHAR(255) NOT NULL UNIQUE,
         `password_hash` VARCHAR(255) NOT NULL,
+        `is_main_admin` TINYINT(1) DEFAULT 0,
+        `is_active` TINYINT(1) DEFAULT 1,
+        `must_change_pwd` TINYINT(1) DEFAULT 0,
         `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
     )");
 
@@ -80,11 +83,11 @@ try {
         `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )");
 
-    // Admin User einfügen (mit dem vom Builder generierten Hash)
+    // Admin User einfǬgen (mit dem vom Builder generierten Hash)
     \$stmt = \$pdo->prepare("SELECT COUNT(*) FROM `oxidpwauser` WHERE `username` = ?");
     \$stmt->execute(['$username']);
     if (\$stmt->fetchColumn() == 0) {
-        \$insertUser = \$pdo->prepare("INSERT INTO `oxidpwauser` (`username`, `password_hash`) VALUES (?, ?)");
+        \$insertUser = \$pdo->prepare("INSERT INTO `oxidpwauser` (`username`, `password_hash`, `is_main_admin`, `is_active`, `must_change_pwd`) VALUES (?, ?, 1, 1, 0)");
         // Hash ist fest einkompiliert, nicht Klartext!
         \$insertUser->execute(['$username', '$hash']);
         echo "=> User '$username' wurde erfolgreich angelegt.\\n";

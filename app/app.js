@@ -32,7 +32,9 @@ const views = {
     stats: document.getElementById('stats-view'),
     topseller: document.getElementById('topseller-view'),
     customerHistory: document.getElementById('customer-history-view'),
-    customers: document.getElementById('customers-view')
+    customers: document.getElementById('customers-view'),
+    users: document.getElementById('users-view'),
+    changePassword: document.getElementById('change-password-view')
 };
 
 // Nav & Sidebar
@@ -390,7 +392,13 @@ async function checkSession() {
             state.user = data.user;
             state.csrfToken = data.csrf;
             userNameDisplay.textContent = state.user.name;
-            switchView('dashboard-view');
+            applyUserRoleUI();
+            
+            if (state.user.must_change_pwd) {
+                switchView('change-password-view');
+            } else {
+                switchView('dashboard-view');
+            }
         } else {
             switchView('login-view');
         }
@@ -408,7 +416,13 @@ async function login(username, password) {
             state.csrfToken = data.csrf;
             userNameDisplay.textContent = state.user.name;
             loginError.textContent = '';
-            switchView('dashboard-view');
+            applyUserRoleUI();
+            
+            if (state.user.must_change_pwd) {
+                switchView('change-password-view');
+            } else {
+                switchView('dashboard-view');
+            }
         } else {
             loginError.textContent = 'Login fehlgeschlagen: ' + (data.error || 'Unbekannt');
         }
@@ -576,7 +590,18 @@ async function searchOrder(orderNr) {
 }
 
 // Render Helpers
+function applyUserRoleUI() {
+    const adminElements = document.querySelectorAll('.admin-only');
+    adminElements.forEach(el => {
+        el.style.display = state.user && state.user.is_main_admin ? '' : 'none';
+    });
+}
+
 function switchView(viewId) {
+    if (state.user && state.user.must_change_pwd && viewId !== 'change-password-view' && viewId !== 'login-view') {
+        viewId = 'change-password-view';
+    }
+
     state.currentView = viewId;
     Object.values(views).forEach(v => {
         if (v) v.style.display = 'none';
@@ -1033,6 +1058,195 @@ if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(err => {
             console.error('SW registration failed:', err);
         });
+    });
+}
+
+// User Management Logic
+const usersTableBody = document.getElementById('users-table-body');
+const createUserForm = document.getElementById('create-user-form');
+const createUserMsg = document.getElementById('create-user-msg');
+
+async function loadUsers() {
+    if (!state.user || !state.user.is_main_admin) return;
+    try {
+        const data = await apiGet('users.list');
+        if (data.ok) {
+            usersTableBody.innerHTML = '';
+            data.users.forEach(u => {
+                const tr = document.createElement('tr');
+                const role = u.is_main_admin ? '<span class="badge badge-paid">Main Admin</span>' : 'Standard User';
+                const status = u.is_active ? '<span class="badge badge-paid">Aktiv</span>' : '<span class="badge badge-storno">Inaktiv</span>';
+                const actions = [];
+                if (!u.is_main_admin) {
+                    actions.push(`<button class="secondary-btn" onclick="toggleUserStatus(${u.id})" style="padding:4px 8px; font-size:0.75rem;">${u.is_active ? 'Deaktivieren' : 'Aktivieren'}</button>`);
+                    actions.push(`<button class="secondary-btn" onclick="forceUserPasswordChange(${u.id})" style="padding:4px 8px; font-size:0.75rem; margin-left:4px;">Pwd Reset</button>`);
+                    actions.push(`<button class="danger-btn" onclick="deleteUser(${u.id})" style="padding:4px 8px; font-size:0.75rem; margin-left:4px;">Löschen</button>`);
+                }
+                tr.innerHTML = `
+                    <td>${u.id}</td>
+                    <td>${escapeHtml(u.username)}</td>
+                    <td>${role}</td>
+                    <td>${status}</td>
+                    <td>${actions.join('')}</td>
+                `;
+                usersTableBody.appendChild(tr);
+            });
+        }
+    } catch (e) {
+        alert('Netzwerkfehler beim Laden der Benutzer.');
+    }
+}
+
+if (createUserForm) {
+    createUserForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = createUserForm.username.value;
+        const password = createUserForm.password.value;
+        createUserMsg.textContent = 'Erstelle...';
+        createUserMsg.className = 'success-msg';
+        
+        try {
+            const data = await apiPost('user.create', { username, password });
+            if (data.ok) {
+                createUserMsg.textContent = 'Benutzer erfolgreich erstellt.';
+                createUserForm.reset();
+                loadUsers();
+                setTimeout(() => createUserMsg.textContent = '', 3000);
+            } else {
+                createUserMsg.className = 'error-msg';
+                createUserMsg.textContent = 'Fehler: ' + data.error;
+            }
+        } catch (e) {
+            createUserMsg.className = 'error-msg';
+            createUserMsg.textContent = 'Netzwerkfehler.';
+        }
+    });
+}
+
+window.toggleUserStatus = async function(id) {
+    if (!confirm('Status ändern?')) return;
+    try {
+        const data = await apiPost('user.toggle_status', { id });
+        if (data.ok) {
+            loadUsers();
+        } else {
+            alert('Fehler: ' + data.error);
+        }
+    } catch (e) {
+        alert('Netzwerkfehler');
+    }
+};
+
+window.deleteUser = async function(id) {
+    if (!confirm('Benutzer wirklich löschen?')) return;
+    try {
+        const data = await apiPost('user.delete', { id });
+        if (data.ok) {
+            loadUsers();
+        } else {
+            alert('Fehler: ' + data.error);
+        }
+    } catch (e) {
+        alert('Netzwerkfehler');
+    }
+};
+
+window.forceUserPasswordChange = async function(id) {
+    if (!confirm('Passwort-Reset erzwingen? Der Benutzer muss sich beim nächsten Login ein neues Passwort setzen.')) return;
+    try {
+        const data = await apiPost('user.force_password_change', { id });
+        if (data.ok) {
+            alert('Passwort-Reset erzwungen.');
+            loadUsers();
+        } else {
+            alert('Fehler: ' + data.error);
+        }
+    } catch (e) {
+        alert('Netzwerkfehler');
+    }
+};
+
+// Hook into view switching for users
+const originalSwitchViewUsers = window.switchView;
+window.switchView = function(viewId) {
+    originalSwitchViewUsers(viewId);
+    if (viewId === 'users-view') {
+        loadUsers();
+    }
+};
+
+// Profile & Change Password Logic
+const headerProfileBtn = document.getElementById('header-profile-btn');
+const userProfileModal = document.getElementById('user-profile-modal');
+const closeProfileModalBtn = document.getElementById('close-profile-modal');
+const btnShowChangePassword = document.getElementById('btn-show-change-password');
+const changePasswordForm = document.getElementById('change-password-form');
+const changePasswordError = document.getElementById('change-password-error');
+const changePasswordSuccess = document.getElementById('change-password-success');
+const oldPasswordGroup = document.getElementById('old-password-group');
+const changePasswordSubtitle = document.getElementById('change-password-subtitle');
+
+if (headerProfileBtn) {
+    headerProfileBtn.addEventListener('click', () => {
+        userProfileModal.style.display = 'block';
+    });
+}
+
+if (closeProfileModalBtn) {
+    closeProfileModalBtn.addEventListener('click', () => {
+        userProfileModal.style.display = 'none';
+    });
+}
+
+if (btnShowChangePassword) {
+    btnShowChangePassword.addEventListener('click', () => {
+        userProfileModal.style.display = 'none';
+        switchView('change-password-view');
+        changePasswordSubtitle.textContent = 'Ändere dein Passwort.';
+        oldPasswordGroup.style.display = 'block';
+        changePasswordForm.old_password.required = true;
+    });
+}
+
+// When forced by must_change_pwd, the switchView handles navigation restrictions
+// But we need to configure the form
+const originalSwitchViewPwd = window.switchView;
+window.switchView = function(viewId) {
+    originalSwitchViewPwd(viewId);
+    if (viewId === 'change-password-view' && state.user && state.user.must_change_pwd) {
+        changePasswordSubtitle.textContent = 'Du musst dein Passwort ändern, bevor du fortfahren kannst.';
+        oldPasswordGroup.style.display = 'none';
+        changePasswordForm.old_password.required = false;
+        if (headerProfileBtn) headerProfileBtn.style.display = 'none';
+    } else if (state.authenticated && headerProfileBtn) {
+        headerProfileBtn.style.display = 'flex';
+    }
+};
+
+if (changePasswordForm) {
+    changePasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        changePasswordError.textContent = '';
+        changePasswordSuccess.textContent = '';
+        const old_password = changePasswordForm.old_password.value;
+        const new_password = changePasswordForm.new_password.value;
+        
+        try {
+            const data = await apiPost('user.change_password', { old_password, new_password });
+            if (data.ok) {
+                changePasswordSuccess.textContent = 'Passwort erfolgreich geändert.';
+                state.user.must_change_pwd = false;
+                changePasswordForm.reset();
+                setTimeout(() => {
+                    changePasswordSuccess.textContent = '';
+                    switchView('dashboard-view');
+                }, 1500);
+            } else {
+                changePasswordError.textContent = 'Fehler: ' + data.error;
+            }
+        } catch (e) {
+            changePasswordError.textContent = 'Netzwerkfehler.';
+        }
     });
 }
 
