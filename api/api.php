@@ -107,6 +107,29 @@ function get_oxid_pdo(): PDO {
     }
 }
 
+function get_order_select_fields(): string {
+    return "
+        o.OXID as id, 
+        o.OXORDERNR as order_nr, 
+        o.OXORDERDATE as created_at, 
+        TRIM(CONCAT(o.OXBILLFNAME, ' ', o.OXBILLLNAME)) as customer, 
+        o.OXTOTALORDERSUM as total, 
+        o.OXDELCOST as shipping, 
+        o.OXTRANSSTATUS as status,
+        o.OXPAID as paid,
+        o.OXSTORNO as storno,
+        o.OXSENDDATE as senddate,
+        o.OXUSERID as user_id,
+        u.OXCUSTNR as customer_nr
+    ";
+}
+
+function get_order_items(PDO $oxid, string $orderId): array {
+    $stmt = $oxid->prepare("SELECT OXARTNUM as sku, OXTITLE as name, OXAMOUNT as qty, OXPRICE as price FROM oxorderarticles WHERE OXORDERID = ?");
+    $stmt->execute([$orderId]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
 // ⚡ Bolt: Performance Optimization
 // Batches article queries to avoid N+1 problem on list endpoints
 function attach_order_items(PDO $oxid, array &$orders): void {
@@ -625,20 +648,9 @@ switch ($op) {
         $countStmt = $oxid->query("SELECT COUNT(*) FROM oxorder");
         $total = (int)$countStmt->fetchColumn();
 
+        $fields = get_order_select_fields();
         $stmt = $oxid->prepare("
-            SELECT 
-                o.OXID as id, 
-                o.OXORDERNR as order_nr, 
-                o.OXORDERDATE as created_at, 
-                TRIM(CONCAT(o.OXBILLFNAME, ' ', o.OXBILLLNAME)) as customer, 
-                o.OXTOTALORDERSUM as total, 
-                o.OXDELCOST as shipping, 
-                o.OXTRANSSTATUS as status,
-                o.OXPAID as paid,
-                o.OXSTORNO as storno,
-                o.OXSENDDATE as senddate,
-                o.OXUSERID as user_id,
-                u.OXCUSTNR as customer_nr
+            SELECT {$fields}
             FROM oxorder o 
             LEFT JOIN oxuser u ON o.OXUSERID = u.OXID
             ORDER BY o.OXORDERNR DESC 
@@ -668,20 +680,9 @@ switch ($op) {
         }
 
         $oxid = get_oxid_pdo();
+        $fields = get_order_select_fields();
         $stmt = $oxid->prepare("
-            SELECT 
-                o.OXID as id, 
-                o.OXORDERNR as order_nr, 
-                o.OXORDERDATE as created_at, 
-                TRIM(CONCAT(o.OXBILLFNAME, ' ', o.OXBILLLNAME)) as customer, 
-                o.OXTOTALORDERSUM as total, 
-                o.OXDELCOST as shipping, 
-                o.OXTRANSSTATUS as status,
-                o.OXPAID as paid,
-                o.OXSTORNO as storno,
-                o.OXSENDDATE as senddate,
-                o.OXUSERID as user_id,
-                u.OXCUSTNR as customer_nr
+            SELECT {$fields}
             FROM oxorder o 
             LEFT JOIN oxuser u ON o.OXUSERID = u.OXID
             WHERE o.OXORDERNR = ?
@@ -691,9 +692,7 @@ switch ($op) {
         $order = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($order) {
-            $artStmt = $oxid->prepare("SELECT OXARTNUM as sku, OXTITLE as name, OXAMOUNT as qty, OXPRICE as price FROM oxorderarticles WHERE OXORDERID = ?");
-            $artStmt->execute([$order['id']]);
-            $order['items'] = $artStmt->fetchAll(PDO::FETCH_ASSOC);
+            $order['items'] = get_order_items($oxid, $order['id']);
             json_response(['ok' => true, 'order' => $order]);
         }
         json_response(['ok' => false, 'error' => 'not_found'], 404);
@@ -710,20 +709,9 @@ switch ($op) {
         }
 
         $oxid = get_oxid_pdo();
+        $fields = get_order_select_fields();
         $stmt = $oxid->prepare("
-            SELECT 
-                o.OXID as id, 
-                o.OXORDERNR as order_nr, 
-                o.OXORDERDATE as created_at, 
-                TRIM(CONCAT(o.OXBILLFNAME, ' ', o.OXBILLLNAME)) as customer, 
-                o.OXTOTALORDERSUM as total, 
-                o.OXDELCOST as shipping, 
-                o.OXTRANSSTATUS as status,
-                o.OXPAID as paid,
-                o.OXSTORNO as storno,
-                o.OXSENDDATE as senddate,
-                o.OXUSERID as user_id,
-                u.OXCUSTNR as customer_nr
+            SELECT {$fields}
             FROM oxorder o 
             LEFT JOIN oxuser u ON o.OXUSERID = u.OXID
             WHERE o.OXORDERDATE >= ? AND o.OXORDERDATE <= ?
@@ -752,20 +740,9 @@ switch ($op) {
         }
 
         $oxid = get_oxid_pdo();
+        $fields = get_order_select_fields();
         $stmt = $oxid->prepare("
-            SELECT 
-                o.OXID as id, 
-                o.OXORDERNR as order_nr, 
-                o.OXORDERDATE as created_at, 
-                TRIM(CONCAT(o.OXBILLFNAME, ' ', o.OXBILLLNAME)) as customer, 
-                o.OXTOTALORDERSUM as total, 
-                o.OXDELCOST as shipping, 
-                o.OXTRANSSTATUS as status,
-                o.OXPAID as paid,
-                o.OXSTORNO as storno,
-                o.OXSENDDATE as senddate,
-                o.OXUSERID as user_id,
-                u.OXCUSTNR as customer_nr
+            SELECT {$fields}
             FROM oxorder o 
             LEFT JOIN oxuser u ON o.OXUSERID = u.OXID
             WHERE o.OXUSERID = ?
