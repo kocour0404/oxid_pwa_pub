@@ -228,17 +228,26 @@ switch ($op) {
         require_csrf();
         $body = read_json_body();
         $pdo = get_pdo();
-        $stmt = $pdo->prepare("INSERT INTO oxidpwaconfig (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_value = ?");
-        
         $allowed_keys = ['shop_db_host', 'shop_db_user', 'shop_db_pass', 'shop_db_name', 'privacy_url', 'shop_baselink'];
+        $insertValues = [];
+        $params = [];
+        
         foreach ($allowed_keys as $key) {
             if (isset($body[$key])) {
                 $val = $body[$key];
                 if ($key === 'shop_db_pass' && $val === '********') {
                     continue;
                 }
-                $stmt->execute([$key, $val, $val]);
+                $insertValues[] = "(?, ?)";
+                $params[] = $key;
+                $params[] = $val;
             }
+        }
+        
+        if (!empty($insertValues)) {
+            $sql = "INSERT INTO oxidpwaconfig (config_key, config_value) VALUES " . implode(", ", $insertValues) . " ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
         }
         json_response(['ok' => true]);
 
